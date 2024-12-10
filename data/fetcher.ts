@@ -9,18 +9,18 @@ export const fetcher = (token?: string) => async (url: string) => {
     });
     return response.data;
   } catch (error: any) {
-    // console.log(
-    //   JSON.stringify(
-    //     {
-    //       message: error.message,
-    //       code: error.code,
-    //       status: error.status,
-    //       response: error,
-    //     },
-    //     null,
-    //     2
-    //   )
-    // );
+    console.log(
+      JSON.stringify(
+        {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          response: error.response,
+        },
+        null,
+        2
+      )
+    );
     return;
 
     // alert(error.message)

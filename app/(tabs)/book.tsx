@@ -163,7 +163,7 @@ export default function BookingScreen() {
       </View>
 
       {/* Content Area */}
-      <ScrollView className="flex-1 px-4">
+      <View className="flex-1 px-4">
         {isLoading ? (
           <>
             <BookingSkeleton />
@@ -185,16 +185,12 @@ export default function BookingScreen() {
                     <BookingSkeleton />
                   ) : (
                     <Pressable
-                      className="mb-6 p-4 bg-white dark:bg-slate-950 rounded-2xl overflow-hidden w-full"
-                      onPress={() =>
-                        router.push(
-                          `/(modals)/book/hotel?id=${item?._id}` as Href
-                        )
-                      }
+                      className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full"
+                      onPress={() => router.push(`/details?id=${item?._id}`)}
                     >
                       <Image
                         source={{ uri: item?.images[0] || "" }}
-                        className="w-full h-40 border border-slate-200 dark:border-slate-700 rounded-xl"
+                        className="w-full h-44 border border-slate-200 dark:border-slate-700 rounded-xl"
                         resizeMode="cover"
                       />
                       <View className="">
@@ -244,7 +240,7 @@ export default function BookingScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

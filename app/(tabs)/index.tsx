@@ -28,15 +28,12 @@ export default function HomeScreen() {
 
   // fetch destinations
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  const { isLoading, data, error } = useSWR(
-    `${baseUrl}/destinations`,
-    fetcher()
-  );
+  const { isLoading, data, error } = useSWR(`${baseUrl}/packages`, fetcher());
   const packagesAPI = useSWR(`${baseUrl}/packages`, fetcher());
 
-  // console.log(JSON.stringify(packagesAPI.data, null, 2))
-
   const { top } = useSafeAreaInsets();
+
+  if (data) console.log(JSON.stringify(data, null, 2));
 
   return (
     <KeyboardAvoidingView

@@ -12,7 +12,7 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import "@/global.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AlertModalProvider } from "@/context/AlertModalContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -42,6 +42,10 @@ export default function RootLayout() {
         >
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="details"
+              options={{ presentation: "modal", headerShown: false }}
+            />
             <Stack.Screen
               name="login"
               options={{ presentation: "modal", headerShown: false }}
