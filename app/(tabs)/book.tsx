@@ -11,7 +11,10 @@ import {
   LogBox,
   Text,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { ReactNode, useEffect, useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/data/fetcher";
@@ -29,6 +32,7 @@ export default function BookingScreen() {
   const { category } = useGlobalSearchParams();
   const colorScheme = useColorScheme();
   const pathName = usePathname();
+  const { top } = useSafeAreaInsets();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -99,7 +103,10 @@ export default function BookingScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-200/20 dark:bg-slate-900">
+    <ScrollView
+      style={{ paddingTop: top }}
+      className="flex-1 bg-slate-200/20 dark:bg-slate-900"
+    >
       <View className="px-4 py-4">
         <ThemedText className="text-3xl font-lexend-bold mb-2">
           Book Your Next Adventure
@@ -163,7 +170,7 @@ export default function BookingScreen() {
       </View>
 
       {/* Content Area */}
-      <View className="flex-1 px-4">
+      <View className="flex-1 px-4 mb-12">
         {isLoading ? (
           <>
             <BookingSkeleton />
@@ -186,7 +193,12 @@ export default function BookingScreen() {
                   ) : (
                     <Pressable
                       className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full"
-                      onPress={() => router.push(`/details?id=${item?._id}`)}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/details",
+                          params: item,
+                        })
+                      }
                     >
                       <Image
                         source={{ uri: item?.images[0] || "" }}
@@ -241,6 +253,6 @@ export default function BookingScreen() {
           </View>
         )}
       </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 }

@@ -92,21 +92,14 @@ export default function HomeScreen() {
               data={
                 isLoading
                   ? [{ _id: "1" }, { _id: "2" }, { _id: "3" }]
-                  : data?.destinations
+                  : data?.data
               }
               keyExtractor={(item) => item?._id}
               renderItem={({ item }) =>
                 isLoading ? (
                   <DestinationCardSkeleton />
                 ) : (
-                  <TripPackageCard
-                    image={item.images[0] || ""}
-                    title={item.name}
-                    price={item.price}
-                    location={item.location}
-                    path={`/trips/${item._id}`}
-                    data={item}
-                  />
+                  <TripPackageCard path={`/trips/${item._id}`} data={item} />
                 )
               }
             />
@@ -188,26 +181,19 @@ export default function HomeScreen() {
               data={
                 packagesAPI.isLoading
                   ? [{ _id: "1" }, { _id: "2" }, { _id: "3" }]
-                  : packagesAPI.data?.packages
+                  : packagesAPI.data?.data
               }
               keyExtractor={(item) => item?._id}
               renderItem={({ item }) =>
                 packagesAPI.isLoading ? (
                   <DestinationCardSkeleton />
                 ) : (
-                  <TripPackageCard
-                    image={item.images[0]}
-                    title={item.name}
-                    price={`GH ${item.price.toString()}`}
-                    location={item.transportation}
-                    path={`/packages/${item._id}`}
-                    data={item}
-                  />
+                  <TripPackageCard path={`/packages/${item._id}`} data={item} />
                 )
               }
             />
 
-            {(packagesAPI.data?.packages?.length === 0 || !packagesAPI.data) &&
+            {(packagesAPI.data?.data?.length === 0 || !packagesAPI.data) &&
               !packagesAPI.isLoading && (
                 <View className="items-center mb-4">
                   {colorScheme === "dark" ? (
