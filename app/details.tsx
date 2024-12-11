@@ -3,6 +3,8 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { HotelSection } from "@/components/ui/sections";
 import { StarRating } from "@/components/ui/star-rating";
+import { useAuth } from "@/context/AuthContext";
+import { useBottomSheet } from "@/context/BottomSheetContext";
 import { fetcher } from "@/data/fetcher";
 import {
   AntDesign,
@@ -10,10 +12,16 @@ import {
   FontAwesome6,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
+import axios from "axios";
 import { router, useGlobalSearchParams } from "expo-router";
 import { ScrollView, View } from "moti";
 import { useEffect, useState } from "react";
-import { ImageBackground, Pressable, Text } from "react-native";
+import {
+  ActivityIndicator,
+  ImageBackground,
+  Pressable,
+  Text,
+} from "react-native";
 import MapView from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useSWR from "swr";
@@ -21,13 +29,58 @@ import useSWR from "swr";
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const { id } = useGlobalSearchParams();
+  const { auth } = useAuth();
+
+  const { showBottomSheet } = useBottomSheet();
+  const handleShowBottomSheet = () => {
+    showBottomSheet(
+      <View className="p-4">
+        <Text className="text-2xl font-bold mb-4">Book Your Stay</Text>
+        <View className="space-y-4">
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg">Check-in Date</Text>
+            <Pressable className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl">
+              <Text>Select Date</Text>
+            </Pressable>
+          </View>
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg">Check-out Date</Text>
+            <Pressable className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl">
+              <Text>Select Date</Text>
+            </Pressable>
+          </View>
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg">Guests</Text>
+            <View className="flex-row items-center space-x-4">
+              <Pressable className="bg-gray-100 dark:bg-gray-800 p-2 rounded-xl">
+                <AntDesign name="minus" size={20} />
+              </Pressable>
+              <Text className="text-lg">2</Text>
+              <Pressable className="bg-gray-100 dark:bg-gray-800 p-2 rounded-xl">
+                <AntDesign name="plus" size={20} />
+              </Pressable>
+            </View>
+          </View>
+          <Pressable className="bg-yellow-500 h-12 items-center justify-center rounded-2xl mt-4">
+            <Text className="text-xl font-semibold text-white">
+              Confirm Booking
+            </Text>
+          </Pressable>
+        </View>
+      </View>,
+      {
+        snapPoints: [0.4],
+        initialSnap: 0,
+      }
+    );
+  };
 
   const { isLoading, data, error } = useSWR(
     `${baseUrl}/hotels/public/${id}`,
     fetcher()
   );
 
-  if (data) console.log(JSON.stringify(data, null, 2));
+  // if (data) console.log(JSON.stringify(data, null, 2));
 
   const [selectedImage, setSelectedImage] = useState(
     data?.data?.images[0] || undefined
@@ -37,10 +90,53 @@ export default function BookDetails() {
     setSelectedImage(data?.data?.images[0] || undefined);
   }, [data]);
 
+  // handle favourite
+  const [favIsLoading, setFavIsLoading] = useState(false);
+  const handleAddToFavorite = async () => {
+    setFavIsLoading(true);
+
+    try {
+      // check if user is logged in
+      if (!auth?.token) {
+        alert("Please login to add to favourites!");
+        return;
+      }
+
+      // make API call
+      const response = await axios.post(
+        `hotels/public/${data?.data?._id}/favorite`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${auth?.token}`,
+          },
+        }
+      );
+
+      alert("Added to Favourites successfully!");
+      console.log(JSON.stringify(response.data));
+    } catch (error: any) {
+      console.error(
+        JSON.stringify(
+          {
+            response: error.response,
+            message: error.message,
+            error: error,
+          },
+          null,
+          2
+        )
+      );
+    } finally {
+      setFavIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-slate-200/20 dark:bg-slate-900">
       {isLoading && (
         <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#eab308" />
           <ThemedText className="font-semibold text-4xl">Loading...</ThemedText>
         </View>
       )}
@@ -235,11 +331,18 @@ export default function BookDetails() {
 
       {data && (
         <View className="flex-row items-center justify-between px-4 py-3 bg-white dark:bg-slate-900">
-          <Pressable className="mr-10">
-            <AntDesign name="hearto" size={32} color="#eab308" />
+          <Pressable className="mr-10" onPress={handleAddToFavorite}>
+            {favIsLoading ? (
+              <ActivityIndicator size={"large"} color={"#eab308"} />
+            ) : (
+              <AntDesign name="hearto" size={32} color="#eab308" />
+            )}
           </Pressable>
 
-          <Pressable className="bg-yellow-500 h-12 px-12 items-center justify-center rounded-2xl">
+          <Pressable
+            onPress={handleShowBottomSheet}
+            className="bg-yellow-500 h-12 px-12 items-center justify-center rounded-2xl"
+          >
             <Text className="text-xl font-semibold text-white">Book Now</Text>
           </Pressable>
         </View>

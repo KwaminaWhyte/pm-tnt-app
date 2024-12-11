@@ -28,6 +28,8 @@ import {
 import { BookingSkeleton } from "@/components/skeletons/bookings";
 import { TabItem } from "@/components/ui/tabs";
 
+LogBox.ignoreAllLogs();
+
 export default function BookingScreen() {
   const { category } = useGlobalSearchParams();
   const colorScheme = useColorScheme();
@@ -57,11 +59,11 @@ export default function BookingScreen() {
     fetcher()
   );
 
-  // useEffect(() => {
-  //   if (data) {
-  //     console.log(JSON.stringify(data, null, 2));
-  //   }
-  // }, [data]);
+  useEffect(() => {
+    if (data) {
+      console.log(JSON.stringify(data, null, 2));
+    }
+  }, [data]);
 
   const tabs = [
     {
