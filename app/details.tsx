@@ -104,7 +104,7 @@ export default function BookDetails() {
 
       // make API call
       const response = await axios.post(
-        `hotels/public/${data?.data?._id}/favorite`,
+        `favorites/hotel/${data?.data?._id}`,
         {},
         {
           headers: {

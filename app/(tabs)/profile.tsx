@@ -161,10 +161,7 @@ const LoggedInProfile = () => {
   return (
     <ScrollView className="flex-1 bg-slate-100 dark:bg-slate-950">
       {/* Profile Header */}
-      <View
-        className="items-center bg-white dark:bg-slate-900 pt-8 pb-6"
-        style={{ paddingTop: top + 32 }}
-      >
+      <View className="items-center pt-4 pb-6">
         <Image
           source={{
             uri: "https://t3.ftcdn.net/jpg/04/77/87/44/360_F_477874414_kSQ9ip26804g8B3ItYsh5XsjNRgqf693.jpg",
@@ -180,8 +177,8 @@ const LoggedInProfile = () => {
       </View>
 
       {/* Navigation Items */}
-      <View className="px-4 py-6">
-        <View className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+      <View className=" py-6">
+        <View className="bg-white dark:bg-slate-900">
           {profileNav.map((item, index) => (
             <Pressable
               key={index}
