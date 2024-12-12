@@ -47,21 +47,12 @@ const WelcomeScreen = () => {
         </ThemedText>
       </View>
 
-      <View className="w-full gap-y-4">
+      <View className="w-full gap-y-5">
         <Pressable
           onPress={() => router.push("/login" as Href)}
           className="h-14 bg-yellow-500 rounded-2xl items-center justify-center"
         >
           <Text className="text-black font-medium text-base">Sign In</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/register" as Href)}
-          className="h-14 bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
-        >
-          <Text className="text-yellow-500 font-medium text-base">
-            Create Account
-          </Text>
         </Pressable>
 
         <View className="flex-row items-center justify-center mt-4">
@@ -71,10 +62,12 @@ const WelcomeScreen = () => {
         </View>
 
         <Pressable
-          onPress={() => router.push("/(home)" as Href)}
-          className="h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl items-center justify-center"
+          onPress={() => router.push("/register" as Href)}
+          className="h-14 bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
         >
-          <ThemedText className="font text-base">Continue as Guest</ThemedText>
+          <Text className="text-yellow-500 font-medium text-base">
+            Create Account
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -196,12 +189,14 @@ const LoggedInProfile = () => {
           ))}
         </View>
 
-        <Pressable
-          onPress={handleSignOut}
-          className="mt-8 h-14 bg-red-500 rounded-2xl items-center justify-center"
-        >
-          <Text className="text-white font-medium text-base">Sign Out</Text>
-        </Pressable>
+        <View className="px-4">
+          <Pressable
+            onPress={handleSignOut}
+            className="mt-8 h-14 bg-red-500 rounded-2xl items-center justify-center"
+          >
+            <Text className="text-white font-medium text-base">Sign Out</Text>
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );

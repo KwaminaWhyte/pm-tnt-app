@@ -10,9 +10,11 @@ import { AnimatePresence, MotiText, MotiView } from "moti";
 import { useState } from "react";
 import {
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -71,7 +73,7 @@ export default function LoginScreen() {
 
       login(response.data);
       resetForm();
-      router.push("/(home)/profile" as Href);
+      router.push("/profile" as Href);
     } catch (error: any) {
       Toast.show({
         type: "error",
@@ -92,88 +94,90 @@ export default function LoginScreen() {
       keyboardVerticalOffset={100}
     >
       <SafeAreaView className="flex-1 bg-white dark:bg-slate-950">
-        <AnimatePresence>
-          <MotiView className="flex-1 gap-y-4">
-            {/* illustration */}
-            <MotiView className="h-[30vh] overflow-hidden justify-center items-center">
-              <Image
-                source={require("@/assets/images/illustrations/journey.png")}
-                className="object-contain w-[70%] h-full"
-              />
-            </MotiView>
-
-            {/* form*/}
-            <MotiView className="flex-1 px-4 gap-y-8">
-              {/* welcome text */}
-              <MotiView>
-                <MotiText className="font-bold text-3xl text-slate-900 dark:text-white">
-                  Welcome back!
-                </MotiText>
-                <Text className="text-slate-900 dark:text-white font text-sm opacity-50">
-                  Sign in to your account
-                </Text>
+        <ScrollView className="flex-1">
+          <AnimatePresence>
+            <MotiView className="flex-1 gap-y-4">
+              {/* illustration */}
+              <MotiView className="items-center justify-center">
+                <Image
+                  source={require("@/assets/images/illustrations/journey.png")}
+                  className="w-56 h-56 object-contain"
+                />
               </MotiView>
 
-              {/* login form */}
-              <MotiView className="flex-1">
-                <View className="space-y-6">
-                  <View>
-                    <Input
-                      value={values.email}
-                      onChangeText={(text) => handleChange("email", text)}
-                      placeholder="Email"
-                      startContent={
-                        <UserOutlined className="w-5 h-5 text-slate-500" />
-                      }
-                      errorMessage={errors.email}
-                    />
-                  </View>
-
-                  <View>
-                    <PasswordInput
-                      value={values.password}
-                      onChangeText={(text) => handleChange("password", text)}
-                      placeholder="Password"
-                      startContent={
-                        <PadlockOutlined className="w-5 h-5 text-slate-500" />
-                      }
-                      errorMessage={errors.password}
-                    />
-                  </View>
-
-                  <View className="flex-row justify-end">
-                    <Pressable>
-                      <Text className="font-medium text-yellow-500">
-                        Forgot password?
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-
-                <View className="mt-8">
-                  <Button
-                    isLoading={isLoading}
-                    label="Sign In"
-                    variant="solid"
-                    onClick={submitForm}
-                  />
-                </View>
-              </MotiView>
-
-              {/* create account link */}
-              <MotiView className="flex-row items-center justify-center py-4">
-                <Text className="font text-slate-900 dark:text-white opacity-50">
-                  Don't have an account?{" "}
-                </Text>
-                <Pressable onPress={() => router.push("/register" as Href)}>
-                  <Text className="font-medium text-yellow-500">
-                    Create account
+              {/* form*/}
+              <MotiView className="flex-1 px-4 gap-y-8">
+                {/* welcome text */}
+                <MotiView>
+                  <MotiText className="font-bold text-3xl text-slate-900 dark:text-white">
+                    Welcome back!
+                  </MotiText>
+                  <Text className="text-slate-900 dark:text-white font text-sm opacity-50">
+                    Sign in to your account
                   </Text>
-                </Pressable>
+                </MotiView>
+
+                {/* login form */}
+                <MotiView className="flex-1">
+                  <View className="space-y-6">
+                    <View>
+                      <Input
+                        value={values.email}
+                        onChangeText={(text) => handleChange("email", text)}
+                        placeholder="Email"
+                        startContent={
+                          <UserOutlined className="w-5 h-5 text-slate-500" />
+                        }
+                        errorMessage={errors.email}
+                      />
+                    </View>
+
+                    <View>
+                      <PasswordInput
+                        value={values.password}
+                        onChangeText={(text) => handleChange("password", text)}
+                        placeholder="Password"
+                        startContent={
+                          <PadlockOutlined className="w-5 h-5 text-slate-500" />
+                        }
+                        errorMessage={errors.password}
+                      />
+                    </View>
+
+                    <View className="flex-row justify-end">
+                      <Pressable>
+                        <Text className="font-medium text-yellow-500">
+                          Forgot password?
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <View className="mt-8">
+                    <Button
+                      isLoading={isLoading}
+                      label="Sign In"
+                      variant="solid"
+                      onClick={submitForm}
+                    />
+                  </View>
+                </MotiView>
+
+                {/* create account link */}
+                <MotiView className="flex-row items-center justify-center py-4">
+                  <Text className="font text-slate-900 dark:text-white opacity-50">
+                    Don't have an account?{" "}
+                  </Text>
+                  <Pressable onPress={() => router.push("/register" as Href)}>
+                    <Text className="font-medium text-yellow-500">
+                      Create account
+                    </Text>
+                  </Pressable>
+                </MotiView>
               </MotiView>
             </MotiView>
-          </MotiView>
-        </AnimatePresence>
+          </AnimatePresence>
+        </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

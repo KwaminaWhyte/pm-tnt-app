@@ -16,6 +16,8 @@ import "@/global.css";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AlertModalProvider } from "@/context/AlertModalContext";
 import { BottomSheetProvider } from "@/context/BottomSheetContext";
+import { Text, View } from "react-native";
+import { AntDesign } from "@expo/vector-icons";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -46,9 +48,19 @@ export default function RootLayout() {
             >
               <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="details" options={{ headerShown: false }} />
                 <Stack.Screen
-                  name="details"
-                  options={{ presentation: "modal", headerShown: false }}
+                  name="wishlist"
+                  options={{
+                    headerTitle: () => (
+                      <View className="flex-row items-center">
+                        <AntDesign name="hearto" size={20} color="#eab308" />
+                        <Text className="ml-1 font-semibold text-xl">
+                          My Favorites
+                        </Text>
+                      </View>
+                    ),
+                  }}
                 />
                 <Stack.Screen
                   name="login"
@@ -56,7 +68,7 @@ export default function RootLayout() {
                 />
                 <Stack.Screen
                   name="register"
-                  options={{ presentation: "modal", headerShown: false }}
+                  options={{ headerShown: false }}
                 />
                 <Stack.Screen name="+not-found" />
               </Stack>
