@@ -52,6 +52,8 @@ export default function LoginScreen() {
   // Handle form submission
   const [isLoading, setIsLoading] = useState(false);
   const submitForm = async () => {
+    console.log({ auth, values });
+
     setIsLoading(true);
     try {
       // check for validation errors
@@ -75,6 +77,8 @@ export default function LoginScreen() {
       resetForm();
       router.push("/profile" as Href);
     } catch (error: any) {
+      console.log(JSON.stringify(error, null, 2));
+
       Toast.show({
         type: "error",
         text1: error.response.data ? "Invalid Credentials" : "Unexpected Error",

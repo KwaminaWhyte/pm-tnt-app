@@ -1,6 +1,6 @@
 import { EntypoCheck } from "@/components/icons/entypo";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { CustomAlertModal } from "@/components/ui/modal";
 import { HotelSection } from "@/components/ui/sections";
 import { StarRating } from "@/components/ui/star-rating";
 import { useAuth } from "@/context/AuthContext";
@@ -8,7 +8,6 @@ import { useBottomSheet } from "@/context/BottomSheetContext";
 import { fetcher } from "@/data/fetcher";
 import {
   AntDesign,
-  Entypo,
   FontAwesome6,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
@@ -18,6 +17,7 @@ import { ScrollView, View } from "moti";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Button,
   ImageBackground,
   Pressable,
   Text,
@@ -25,12 +25,47 @@ import {
 import MapView from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useSWR from "swr";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Input } from "@/components/ui/input";
+import { TextInput } from "react-native-gesture-handler";
+import moment from "moment";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const { id } = useGlobalSearchParams();
   const { auth } = useAuth();
 
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [checkInDatePickerVisible, setCheckInDatePickerVisible] =
+    useState(false);
+  const [checkInDate, setCheckInDate] = useState("");
+  const [checkOutDate, setCheckOutDate] = useState("");
+  const [checkOutDatePickerVisible, setCheckOutDatePickerVisible] =
+    useState(false);
+  const handleCheckIn = (date: any) => {
+    console.log(date);
+    setCheckInDatePickerVisible(false);
+    setCheckInDate(date);
+  };
+
+  const handleCheckOut = (date: any) => {
+    console.log(date);
+    setCheckOutDatePickerVisible(false);
+    setCheckOutDate(date);
+  };
+
+  const showDatePicker = () => {
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirm = (date: any) => {
+    console.warn("A date has been picked: ", date);
+    hideDatePicker();
+  };
   const { showBottomSheet } = useBottomSheet();
   const handleShowBottomSheet = () => {
     showBottomSheet(
@@ -38,14 +73,21 @@ export default function BookDetails() {
         <Text className="text-2xl font-bold mb-4">Book Your Stay</Text>
         <View className="space-y-4">
           <View className="flex-row justify-between items-center">
-            <Text className="text-lg">Check-in Date</Text>
-            <Pressable className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl">
-              <Text>Select Date</Text>
-            </Pressable>
+            <Text className="text-lg">Check-in</Text>
+
+            <View className="flex-row items-center space-x-1">
+              <Text className="text-lg">{moment(checkInDate).toString()}</Text>
+              <Pressable onPress={() => setCheckInDatePickerVisible(true)}>
+                <AntDesign name="calendar" size={20} color={"#eab308"} />
+              </Pressable>
+            </View>
           </View>
           <View className="flex-row justify-between items-center">
             <Text className="text-lg">Check-out Date</Text>
-            <Pressable className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl">
+            <Pressable
+              onPress={showDatePicker}
+              className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl"
+            >
               <Text>Select Date</Text>
             </Pressable>
           </View>
@@ -92,6 +134,50 @@ export default function BookDetails() {
 
   // handle favourite
   const [favIsLoading, setFavIsLoading] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // check if added to favourites
+  const checkIfAddedToFavorite = async () => {
+    try {
+      // check if user is logged in
+      if (!auth?.token) {
+        return;
+      }
+
+      // make API call
+      const response = await axios.get(
+        `${baseUrl}/favorites/check/hotel/${data?.data?._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth?.token}`,
+          },
+        }
+      );
+
+      console.log(response.data?.isFavorite);
+
+      setIsFavorite(response.data?.isFavorite);
+    } catch (error: any) {
+      console.error(
+        JSON.stringify(
+          {
+            response: error.response,
+            message: error.message,
+            error: error,
+          },
+          null,
+          2
+        )
+      );
+    }
+  };
+  useEffect(() => {
+    if (data) {
+      checkIfAddedToFavorite();
+    }
+  }, []);
+
+  // handle add to favorite
   const handleAddToFavorite = async () => {
     setFavIsLoading(true);
 
@@ -104,7 +190,7 @@ export default function BookDetails() {
 
       // make API call
       const response = await axios.post(
-        `favorites/hotel/${data?.data?._id}`,
+        `${baseUrl}/favorites/hotel/${data?.data?._id}`,
         {},
         {
           headers: {
@@ -335,7 +421,11 @@ export default function BookDetails() {
             {favIsLoading ? (
               <ActivityIndicator size={"large"} color={"#eab308"} />
             ) : (
-              <AntDesign name="hearto" size={32} color="#eab308" />
+              <AntDesign
+                name={isFavorite ? "heart" : "hearto"}
+                size={32}
+                color="#eab308"
+              />
             )}
           </Pressable>
 
@@ -348,11 +438,28 @@ export default function BookDetails() {
         </View>
       )}
 
-      {error && (
+      {!isLoading && (error || !data) && (
         <View className="flex-1 items-center justify-center">
-          <ThemedText className="text-red-500 text-3xl">Error</ThemedText>
+          <ThemedText className="text-red-500 text-3xl">
+            Error {error?.message}
+          </ThemedText>
+          <Button title="Go Back" onPress={() => router.back()} />
         </View>
       )}
+
+      {/* check-in date */}
+      <DateTimePickerModal
+        isVisible={checkInDatePickerVisible}
+        mode="datetime"
+        onConfirm={handleCheckIn}
+        onCancel={() => setCheckInDatePickerVisible(false)}
+      />
+      <DateTimePickerModal
+        isVisible={checkOutDatePickerVisible}
+        mode="datetime"
+        onConfirm={handleCheckOut}
+        onCancel={() => setCheckOutDatePickerVisible(false)}
+      />
     </SafeAreaView>
   );
 }
