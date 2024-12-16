@@ -4,7 +4,8 @@ import Toast from "react-native-toast-message";
 const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export const bookHotelRoom = async (
-  roomId: number,
+  roomId: string,
+  hotelId: string,
   checkIn: string,
   checkOut: string,
   guests: number,
@@ -12,7 +13,7 @@ export const bookHotelRoom = async (
 ) => {
   try {
     const response = await axios.post(
-      `${baseUrl}/hotels/public/${roomId}/book`,
+      `${baseUrl}/hotels/public/${hotelId}/book`,
       {
         roomId,
         checkIn,
@@ -34,14 +35,6 @@ export const bookHotelRoom = async (
       text1: "Unexpected Error",
       text2: "Something went wrong",
     });
-    console.error(
-      JSON.stringify(
-        {
-          response: error.response?.data,
-        },
-        null,
-        2
-      )
-    );
+    console.error(JSON.stringify(error.response?.data, null, 2));
   }
 };

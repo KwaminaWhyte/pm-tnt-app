@@ -17,7 +17,7 @@ import { ScrollView, View } from "moti";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Button,
+  Image,
   ImageBackground,
   Pressable,
   Text,
@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { TextInput } from "react-native-gesture-handler";
 import moment from "moment";
 import { bookHotelRoom } from "@/data/api";
+import { Button } from "@/components/ui/button";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -38,6 +39,7 @@ export default function BookDetails() {
 
   const [bookingIsLoading, setBookingIsLoading] = useState(false);
   const [guests, setGuests] = useState("1");
+  const [selectedRoomId, setSelectedRoomId] = useState("");
   const [checkInDatePickerVisible, setCheckInDatePickerVisible] =
     useState(false);
   const [checkInDate, setCheckInDate] = useState("");
@@ -114,7 +116,8 @@ export default function BookDetails() {
               setBookingIsLoading(true);
               try {
                 const response = await bookHotelRoom(
-                  data?.data?._id,
+                  selectedRoomId,
+                  data?.data?.hotel?._id as string,
                   checkInDate,
                   checkOutDate,
                   parseInt(guests),
@@ -138,7 +141,7 @@ export default function BookDetails() {
         </View>
       </View>,
       {
-        snapPoints: [0.5],
+        snapPoints: [0.5, 0.6, 0.7, 0.8, 0.9],
         initialSnap: 0,
       }
     );
@@ -158,11 +161,11 @@ export default function BookDetails() {
   // if (data) console.log(JSON.stringify(data, null, 2));
 
   const [selectedImage, setSelectedImage] = useState(
-    data?.data?.images[0] || undefined
+    data?.data?.hotel?.images[0] || undefined
   );
 
   useEffect(() => {
-    setSelectedImage(data?.data?.images[0] || undefined);
+    setSelectedImage(data?.data?.hotel?.images[0] || undefined);
   }, [data]);
 
   // handle favourite
@@ -179,7 +182,7 @@ export default function BookDetails() {
 
       // make API call
       const response = await axios.get(
-        `${baseUrl}/favorites/check/hotel/${data?.data?._id}`,
+        `${baseUrl}/favorites/check/hotel/${data?.data?.hotel?._id}`,
         {
           headers: {
             Authorization: `Bearer ${auth?.token}`,
@@ -223,7 +226,7 @@ export default function BookDetails() {
 
       // make API call
       const response = await axios.post(
-        `${baseUrl}/favorites/hotel/${data?.data?._id}`,
+        `${baseUrl}/favorites/hotel/${data?.data?.hotel?._id}`,
         {},
         {
           headers: {
@@ -279,37 +282,39 @@ export default function BookDetails() {
           </ImageBackground>
 
           {/* selectable images */}
-          {data?.data?.images?.length > 1 && (
+          {data?.data?.hotel?.images?.length > 1 && (
             <ScrollView
               horizontal
               className="px-3 py-2"
               contentContainerStyle={{ gap: 8 }}
               showsHorizontalScrollIndicator={false}
             >
-              {data?.data?.images?.map((image: string, index: number) => (
-                <Pressable
-                  key={index}
-                  onPress={() => setSelectedImage(image)}
-                  className="h-10 w-10 rounded-md overflow-hidden"
-                >
-                  <ImageBackground
-                    source={{ uri: image }}
-                    className="h-full w-full"
-                    resizeMode="cover"
+              {data?.data?.hotel?.images?.map(
+                (image: string, index: number) => (
+                  <Pressable
+                    key={index}
+                    onPress={() => setSelectedImage(image)}
+                    className="h-10 w-10 rounded-md overflow-hidden"
                   >
-                    {selectedImage !== image && (
-                      <View className="w-full h-full bg-slate-300/70" />
-                    )}
-                  </ImageBackground>
-                </Pressable>
-              ))}
+                    <ImageBackground
+                      source={{ uri: image }}
+                      className="h-full w-full"
+                      resizeMode="cover"
+                    >
+                      {selectedImage !== image && (
+                        <View className="w-full h-full bg-slate-300/70" />
+                      )}
+                    </ImageBackground>
+                  </Pressable>
+                )
+              )}
             </ScrollView>
           )}
 
           {/* title */}
           <View className="mb-6">
             <ThemedText className="font-semibold text-3xl px-3">
-              {data?.data?.name}
+              {data?.data?.hotel?.name}
             </ThemedText>
 
             <View className="flex-row items-center justify-between px-3 pt-3">
@@ -321,18 +326,18 @@ export default function BookDetails() {
                 />
                 <View>
                   <Text className="text-sm">
-                    {data?.data?.location?.address}
+                    {data?.data?.hotel?.location?.address}
                   </Text>
                   <Text className="text-sm">
-                    {data?.data?.location?.city},{" "}
-                    {data?.data?.location?.country}
+                    {data?.data?.hotel?.location?.city},{" "}
+                    {data?.data?.hotel?.location?.country}
                   </Text>
                 </View>
               </View>
 
               <StarRating
-                stars={data?.data?.averageRating}
-                reviewCount={data?.data?.ratings?.length}
+                stars={data?.data?.hotel?.averageRating}
+                reviewCount={data?.data?.hotel?.ratings?.length}
               />
             </View>
           </View>
@@ -340,7 +345,7 @@ export default function BookDetails() {
           {/* description */}
           <HotelSection title="About">
             <Text className="text-slate-600 dark:text-slate-400">
-              {data?.data?.description}
+              {data?.data?.hotel?.description}
             </Text>
           </HotelSection>
 
@@ -352,7 +357,15 @@ export default function BookDetails() {
                   key={index}
                   className="flex-row mb-2 bg-white dark:bg-slate-900 rounded-2xl p-2"
                 >
-                  <View className="w-32 bg-slate-300 h-full rounded-2xl mr-2"></View>
+                  {room?.images?.length > 0 ? (
+                    <Image
+                      source={{ uri: room?.images[0] }}
+                      className="w-28 h-28 rounded-2xl mr-2"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-28 bg-slate-300 h-full rounded-2xl mr-2"></View>
+                  )}
 
                   <View className="flex-1">
                     <View className="flex-row items-center justify-between h-6 mb-1">
@@ -383,10 +396,23 @@ export default function BookDetails() {
                       </Text>
                     )}
 
-                    <Text className="font-bold text-xl mt-1">
-                      ${room.pricePerNight}{" "}
-                      <Text className="text-sm font-normal">/night</Text>
-                    </Text>
+                    <View className="flex-row items-center space-x-2 mt-1">
+                      {room?.isAvailable && (
+                        <Pressable
+                          onPress={() => {
+                            setSelectedRoomId(room._id);
+                            handleShowBottomSheet();
+                          }}
+                          className="bg-yellow-500 px-4 py-2 rounded-md"
+                        >
+                          <Text>Book Now</Text>
+                        </Pressable>
+                      )}
+                      <Text className="font-bold text-xl mt-1">
+                        ${room.pricePerNight}{" "}
+                        <Text className="text-sm font-normal">/night</Text>
+                      </Text>
+                    </View>
                   </View>
                 </View>
               ))}
@@ -396,12 +422,14 @@ export default function BookDetails() {
           {/* amenities */}
           <HotelSection title="Amenities">
             <View>
-              {data?.data?.amenities?.map((amenity: any, index: number) => (
-                <View key={index} className="flex-row items-center mb-1">
-                  <EntypoCheck className="mr-2 w-4 h-4 text-green-500" />
-                  <Text className="">{amenity}</Text>
-                </View>
-              ))}
+              {data?.data?.hotel?.amenities?.map(
+                (amenity: any, index: number) => (
+                  <View key={index} className="flex-row items-center mb-1">
+                    <EntypoCheck className="mr-2 w-4 h-4 text-green-500" />
+                    <Text className="">{amenity}</Text>
+                  </View>
+                )
+              )}
             </View>
           </HotelSection>
 
@@ -414,7 +442,9 @@ export default function BookDetails() {
                   size={24}
                   color="black"
                 />
-                <Text className="">{data?.data?.contactInfo?.phone}</Text>
+                <Text className="">
+                  {data?.data?.hotel?.contactInfo?.phone}
+                </Text>
               </View>
               <View className="flex-row items-center mb-2 gap-x-2">
                 <MaterialCommunityIcons
@@ -422,11 +452,15 @@ export default function BookDetails() {
                   size={24}
                   color="black"
                 />
-                <Text className="">{data?.data?.contactInfo?.email}</Text>
+                <Text className="">
+                  {data?.data?.hotel?.contactInfo?.email}
+                </Text>
               </View>
               <View className="flex-row items-center mb-2 gap-x-2">
                 <MaterialCommunityIcons name="web" size={24} color="black" />
-                <Text className="">{data?.data?.contactInfo?.website}</Text>
+                <Text className="">
+                  {data?.data?.hotel?.contactInfo?.website}
+                </Text>
               </View>
             </View>
           </HotelSection>
@@ -436,8 +470,8 @@ export default function BookDetails() {
             <View className="rounded-2xl overflow-hidden h-56 mt-2">
               <MapView
                 initialRegion={{
-                  latitude: data?.data?.location?.geo?.coordinates[1],
-                  longitude: data?.data?.location?.geo?.coordinates[0],
+                  latitude: data?.data?.hotel?.location?.geo?.coordinates[1],
+                  longitude: data?.data?.hotel?.location?.geo?.coordinates[0],
                   latitudeDelta: 0.0922,
                   longitudeDelta: 0.0421,
                 }}
@@ -476,7 +510,11 @@ export default function BookDetails() {
           <ThemedText className="text-red-500 text-3xl">
             Error {error?.message}
           </ThemedText>
-          <Button title="Go Back" onPress={() => router.back()} />
+          <Button
+            label="Go Back"
+            onClick={() => router.back()}
+            startIcon={<AntDesign name="arrowleft" size={24} color="white" />}
+          />
         </View>
       )}
 
