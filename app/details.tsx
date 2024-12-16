@@ -29,13 +29,15 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Input } from "@/components/ui/input";
 import { TextInput } from "react-native-gesture-handler";
 import moment from "moment";
+import { bookHotelRoom } from "@/data/api";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const { id } = useGlobalSearchParams();
   const { auth } = useAuth();
 
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [bookingIsLoading, setBookingIsLoading] = useState(false);
+  const [guests, setGuests] = useState("1");
   const [checkInDatePickerVisible, setCheckInDatePickerVisible] =
     useState(false);
   const [checkInDate, setCheckInDate] = useState("");
@@ -54,56 +56,81 @@ export default function BookDetails() {
     setCheckOutDate(date);
   };
 
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
-  };
-
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
-  };
-
-  const handleConfirm = (date: any) => {
-    console.warn("A date has been picked: ", date);
-    hideDatePicker();
-  };
   const { showBottomSheet } = useBottomSheet();
   const handleShowBottomSheet = () => {
     showBottomSheet(
       <View className="p-4">
         <Text className="text-2xl font-bold mb-4">Book Your Stay</Text>
         <View className="space-y-4">
-          <View className="flex-row justify-between items-center">
+          <View className="">
             <Text className="text-lg">Check-in</Text>
-
-            <View className="flex-row items-center space-x-1">
-              <Text className="text-lg">{moment(checkInDate).toString()}</Text>
-              <Pressable onPress={() => setCheckInDatePickerVisible(true)}>
-                <AntDesign name="calendar" size={20} color={"#eab308"} />
+            <View className="flex-row items-center space-x-5">
+              <View className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center">
+                <Text className="">
+                  {checkInDate
+                    ? moment(checkInDate).format("DD-MMM-YYYY hh:mm A")
+                    : "Select Date"}
+                </Text>
+              </View>
+              <Pressable
+                className="h-12 w-12 items-center justify-center rounded-xl bg-yellow-500"
+                onPress={() => setCheckInDatePickerVisible(true)}
+              >
+                <AntDesign name="calendar" size={24} color={"#fff"} />
               </Pressable>
             </View>
           </View>
-          <View className="flex-row justify-between items-center">
-            <Text className="text-lg">Check-out Date</Text>
-            <Pressable
-              onPress={showDatePicker}
-              className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl"
-            >
-              <Text>Select Date</Text>
-            </Pressable>
+          <View className="">
+            <Text className="text-lg">Check-out</Text>
+            <View className="flex-row items-center space-x-5">
+              <View className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center">
+                <Text className="">
+                  {checkOutDate
+                    ? moment(checkOutDate).format("DD-MMM-YYYY hh:mm A")
+                    : "Select Date"}
+                </Text>
+              </View>
+              <Pressable
+                className="h-12 w-12 items-center justify-center rounded-xl bg-yellow-500"
+                onPress={() => setCheckOutDatePickerVisible(true)}
+              >
+                <AntDesign name="calendar" size={24} color={"#fff"} />
+              </Pressable>
+            </View>
           </View>
-          <View className="flex-row justify-between items-center">
+          <View className="">
             <Text className="text-lg">Guests</Text>
-            <View className="flex-row items-center space-x-4">
-              <Pressable className="bg-gray-100 dark:bg-gray-800 p-2 rounded-xl">
-                <AntDesign name="minus" size={20} />
-              </Pressable>
-              <Text className="text-lg">2</Text>
-              <Pressable className="bg-gray-100 dark:bg-gray-800 p-2 rounded-xl">
-                <AntDesign name="plus" size={20} />
-              </Pressable>
+            <View className="flex-row items-center space-x-5">
+              <TextInput
+                className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center"
+                placeholder="1"
+                keyboardType="numeric"
+              />
+              <View className="h-12 w-12" />
             </View>
           </View>
-          <Pressable className="bg-yellow-500 h-12 items-center justify-center rounded-2xl mt-4">
+          <Pressable
+            onPress={async () => {
+              setBookingIsLoading(true);
+              try {
+                const response = await bookHotelRoom(
+                  data?.data?._id,
+                  checkInDate,
+                  checkOutDate,
+                  parseInt(guests),
+                  auth?.token as string
+                );
+                console.log(response);
+              } catch (error: any) {
+              } finally {
+                setBookingIsLoading(false);
+              }
+            }}
+            className="bg-yellow-500 h-12 items-center justify-center rounded-2xl mt-4"
+          >
+            {bookingIsLoading && (
+              <ActivityIndicator size="small" color="#fff" />
+            )}
             <Text className="text-xl font-semibold text-white">
               Confirm Booking
             </Text>
@@ -111,11 +138,17 @@ export default function BookDetails() {
         </View>
       </View>,
       {
-        snapPoints: [0.4],
+        snapPoints: [0.5],
         initialSnap: 0,
       }
     );
   };
+
+  useEffect(() => {
+    if (checkInDate || checkOutDate) {
+      handleShowBottomSheet();
+    }
+  }, [checkInDate, checkOutDate]);
 
   const { isLoading, data, error } = useSWR(
     `${baseUrl}/hotels/public/${id}`,
@@ -452,7 +485,10 @@ export default function BookDetails() {
         isVisible={checkInDatePickerVisible}
         mode="datetime"
         onConfirm={handleCheckIn}
-        onCancel={() => setCheckInDatePickerVisible(false)}
+        onCancel={() => {
+          setCheckInDate("");
+          setCheckInDatePickerVisible(false);
+        }}
       />
       <DateTimePickerModal
         isVisible={checkOutDatePickerVisible}

@@ -15,7 +15,7 @@ export const fetcher = (token?: string) => async (url: string) => {
           message: error.message,
           code: error.code,
           status: error.status,
-          response: error.response,
+          response: error.response?.data,
         },
         null,
         2
