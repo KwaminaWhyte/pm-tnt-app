@@ -31,6 +31,7 @@ import { TextInput } from "react-native-gesture-handler";
 import moment from "moment";
 import { bookHotelRoom } from "@/data/api";
 import { Button } from "@/components/ui/button";
+import Toast from "react-native-toast-message";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -497,7 +498,13 @@ export default function BookDetails() {
           </Pressable>
 
           <Pressable
-            onPress={handleShowBottomSheet}
+            onPress={() => {
+              Toast.show({
+                type: "success",
+                text1: "Booked Successfully!",
+                text2: "Check your bookings page",
+              });
+            }}
             className="bg-yellow-500 h-12 px-12 items-center justify-center rounded-2xl"
           >
             <Text className="text-xl font-semibold text-white">Book Now</Text>
