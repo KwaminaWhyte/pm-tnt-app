@@ -47,12 +47,12 @@ const WelcomeScreen = () => {
         </ThemedText>
       </View>
 
-      <View className="w-full gap-y-5">
+      <View className="w-full gap-y-5 px-6">
         <Pressable
           onPress={() => router.push("/login" as Href)}
           className="h-14 bg-yellow-500 rounded-2xl items-center justify-center"
         >
-          <Text className="text-black font-medium text-base">Sign In</Text>
+          <Text className="font-medium text-lg text-white">Sign In</Text>
         </Pressable>
 
         <View className="flex-row items-center justify-center mt-4">
@@ -65,7 +65,7 @@ const WelcomeScreen = () => {
           onPress={() => router.push("/register" as Href)}
           className="h-14 bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
         >
-          <Text className="text-yellow-500 font-medium text-base">
+          <Text className="text-yellow-500 font-medium text-lg">
             Create Account
           </Text>
         </Pressable>

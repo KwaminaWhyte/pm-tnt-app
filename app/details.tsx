@@ -22,6 +22,7 @@ import {
   Pressable,
   Text,
 } from "react-native";
+import { useToast } from "react-native-toast-notifications";
 import MapView from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useSWR from "swr";
@@ -31,12 +32,13 @@ import { TextInput } from "react-native-gesture-handler";
 import moment from "moment";
 import { bookHotelRoom } from "@/data/api";
 import { Button } from "@/components/ui/button";
-import Toast from "react-native-toast-message";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const { id } = useGlobalSearchParams();
   const { auth } = useAuth();
+
+  const toast = useToast();
 
   const [bookingIsLoading, setBookingIsLoading] = useState(false);
   const [guests, setGuests] = useState("1");
@@ -498,16 +500,10 @@ export default function BookDetails() {
           </Pressable>
 
           <Pressable
-            onPress={() => {
-              Toast.show({
-                type: "success",
-                text1: "Booked Successfully!",
-                text2: "Check your bookings page",
-              });
-            }}
+            onPress={() => toast.show("Toast message", { type: "success" })}
             className="bg-yellow-500 h-12 px-12 items-center justify-center rounded-2xl"
           >
-            <Text className="text-xl font-semibold text-white">Book Now</Text>
+            <Text className="text-xl font-semibold text-white">Show toast</Text>
           </Pressable>
         </View>
       )}

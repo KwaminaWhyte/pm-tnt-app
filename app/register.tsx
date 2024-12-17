@@ -23,7 +23,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Toast from "react-native-toast-message";
 
 export default function RegistrationScreen() {
   const initialValues = {
@@ -57,13 +56,6 @@ export default function RegistrationScreen() {
 
       console.log(response.data);
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: error.response.data ? "Invalid Credentials" : "Unexpected Error",
-        text2:
-          error.response.data?.errors[0]?.message ||
-          "Something went wrong" + error.message,
-      });
       console.error(JSON.stringify(error.response.data, null, 2));
     } finally {
       setIsLoading(false);

@@ -10,6 +10,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ToastProvider } from "react-native-toast-notifications";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import "@/global.css";
@@ -41,41 +42,47 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <BottomSheetProvider>
-          <AlertModalProvider>
-            <ThemeProvider
-              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-            >
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="details" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="wishlist"
-                  options={{
-                    headerTitle: () => (
-                      <View className="flex-row items-center">
-                        <AntDesign name="hearto" size={20} color="#eab308" />
-                        <Text className="ml-1 font-semibold text-xl">
-                          My Favorites
-                        </Text>
-                      </View>
-                    ),
-                  }}
-                />
-                <Stack.Screen
-                  name="login"
-                  options={{ presentation: "modal", headerShown: false }}
-                />
-                <Stack.Screen
-                  name="register"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-              <StatusBar style="auto" />
-            </ThemeProvider>
-          </AlertModalProvider>
-        </BottomSheetProvider>
+        <ToastProvider
+          offsetTop={60}
+          duration={2000}
+          animationDuration={250}
+          placement="top"
+        >
+          <BottomSheetProvider>
+            <AlertModalProvider>
+              <ThemeProvider
+                value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+              >
+                <Stack>
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="details"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="wishlist"
+                    options={{
+                      title: "My Favorites",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="login"
+                    options={{ presentation: "modal", headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="register"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+                <StatusBar style="auto" />
+              </ThemeProvider>
+            </AlertModalProvider>
+          </BottomSheetProvider>
+        </ToastProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

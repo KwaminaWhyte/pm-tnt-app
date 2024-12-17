@@ -19,7 +19,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Toast from "react-native-toast-message";
 
 export default function LoginScreen() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -60,11 +59,11 @@ export default function LoginScreen() {
       const validationErrors = validate(values);
       if (Object.keys(validationErrors).length > 0) {
         // show toast message based on error
-        Toast.show({
-          type: "error",
-          text1: "Invalid Credentials",
-          text2: validationErrors.email || validationErrors.password,
-        });
+        // Toast.show({
+        //   type: "error",
+        //   text1: "Invalid Credentials",
+        //   text2: validationErrors.email || validationErrors.password,
+        // });
         return;
       }
 
@@ -79,13 +78,13 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.log(JSON.stringify(error, null, 2));
 
-      Toast.show({
-        type: "error",
-        text1: error.response.data ? "Invalid Credentials" : "Unexpected Error",
-        text2:
-          error.response.data?.errors[0]?.message ||
-          "Something went wrong" + error.message,
-      });
+      // Toast.show({
+      //   type: "error",
+      //   text1: error.response.data ? "Invalid Credentials" : "Unexpected Error",
+      //   text2:
+      //     error.response.data?.errors[0]?.message ||
+      //     "Something went wrong" + error.message,
+      // });
     } finally {
       setIsLoading(false);
     }
@@ -123,30 +122,26 @@ export default function LoginScreen() {
 
                 {/* login form */}
                 <MotiView className="flex-1">
-                  <View className="space-y-6">
-                    <View>
-                      <Input
-                        value={values.email}
-                        onChangeText={(text) => handleChange("email", text)}
-                        placeholder="Email"
-                        startContent={
-                          <UserOutlined className="w-5 h-5 text-slate-500" />
-                        }
-                        errorMessage={errors.email}
-                      />
-                    </View>
+                  <View className="">
+                    <Input
+                      value={values.email}
+                      onChangeText={(text) => handleChange("email", text)}
+                      placeholder="Email"
+                      startContent={
+                        <UserOutlined className="w-5 h-5 text-slate-500" />
+                      }
+                      errorMessage={errors.email}
+                    />
 
-                    <View>
-                      <PasswordInput
-                        value={values.password}
-                        onChangeText={(text) => handleChange("password", text)}
-                        placeholder="Password"
-                        startContent={
-                          <PadlockOutlined className="w-5 h-5 text-slate-500" />
-                        }
-                        errorMessage={errors.password}
-                      />
-                    </View>
+                    <PasswordInput
+                      value={values.password}
+                      onChangeText={(text) => handleChange("password", text)}
+                      placeholder="Password"
+                      startContent={
+                        <PadlockOutlined className="w-5 h-5 text-slate-500" />
+                      }
+                      errorMessage={errors.password}
+                    />
 
                     <View className="flex-row justify-end">
                       <Pressable>
