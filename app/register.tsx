@@ -118,10 +118,10 @@ export default function RegistrationScreen() {
 
       console.log(response.data);
     } catch (error: any) {
-      toast.show("Failed to register!" + error.response.data?.summary, {
+      toast.show("Failed to register! " + error?.response?.data?.message, {
         type: "danger",
       });
-      console.error(JSON.stringify(error.response.data?.summary, null, 2));
+      console.error(JSON.stringify(error.response.data, null, 2));
     } finally {
       setIsLoading(false);
     }
