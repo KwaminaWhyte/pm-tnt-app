@@ -12,6 +12,15 @@ export const bookHotelRoom = async (
   token: string
 ) => {
   try {
+    console.log({
+      roomId,
+      hotelId,
+      checkIn,
+      checkOut,
+      guests,
+      token,
+    });
+
     const response = await axios.post(
       `${baseUrl}/hotels/public/${hotelId}/book`,
       {
