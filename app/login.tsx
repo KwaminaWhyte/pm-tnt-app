@@ -19,8 +19,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useToast } from "react-native-toast-notifications";
 
 export default function LoginScreen() {
+  const toast = useToast();
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const { login, auth } = useAuth();
 
@@ -59,11 +61,13 @@ export default function LoginScreen() {
       const validationErrors = validate(values);
       if (Object.keys(validationErrors).length > 0) {
         // show toast message based on error
-        // Toast.show({
-        //   type: "error",
-        //   text1: "Invalid Credentials",
-        //   text2: validationErrors.email || validationErrors.password,
-        // });
+        toast.show(
+          validationErrors.email ||
+            validationErrors.password ||
+            "Invalid credentials provided!",
+          { type: "danger" }
+        );
+
         return;
       }
 
@@ -76,15 +80,13 @@ export default function LoginScreen() {
       resetForm();
       router.push("/profile" as Href);
     } catch (error: any) {
-      console.log(JSON.stringify(error, null, 2));
+      console.log(JSON.stringify(error.response, null, 2));
 
-      // Toast.show({
-      //   type: "error",
-      //   text1: error.response.data ? "Invalid Credentials" : "Unexpected Error",
-      //   text2:
-      //     error.response.data?.errors[0]?.message ||
-      //     "Something went wrong" + error.message,
-      // });
+      toast.show(
+        error.response.data?.errors[0]?.message ||
+          "Something went wrong! " + error.message,
+        { type: "danger" }
+      );
     } finally {
       setIsLoading(false);
     }
