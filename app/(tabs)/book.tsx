@@ -27,6 +27,7 @@ import {
 } from "@/components/icons/solar";
 import { BookingSkeleton } from "@/components/skeletons/bookings";
 import { TabItem } from "@/components/ui/tabs";
+import { VehicleListingCard } from "@/components/pressable-cards/vehicle";
 
 LogBox.ignoreAllLogs();
 
@@ -81,7 +82,7 @@ export default function BookingScreen() {
     {
       path: "vehicles",
       endpoint: "vehicles",
-      label: "Vehicles",
+      label: "Rides",
       icon: (
         <CarFilledIcon
           className={`${
@@ -181,6 +182,7 @@ export default function BookingScreen() {
           </>
         ) : (
           <View>
+            {/* start:: Hotels listing */}
             {category === "hotels" && data?.data?.length > 0 && (
               <FlatList
                 data={
@@ -234,6 +236,28 @@ export default function BookingScreen() {
                 }
               />
             )}
+            {/* end:: Hotels listing */}
+
+            {/* start:: Vehicles listing */}
+            {category === "vehicles" && data?.data?.length > 0 && (
+              <FlatList
+                data={
+                  isLoading
+                    ? [{ _id: "1" }, { _id: "2" }, { _id: "3" }, { _id: "4" }]
+                    : data?.data
+                }
+                keyExtractor={(item) => item?._id}
+                renderItem={({ item }) =>
+                  isLoading ? (
+                    <BookingSkeleton />
+                  ) : (
+                    <VehicleListingCard item={item} />
+                  )
+                }
+              />
+            )}
+
+            {/* start:: Loading skeleton */}
             {!isLoading && data?.data?.length === 0 && (
               <View className="items-center mb-4">
                 {colorScheme === "dark" ? (
@@ -252,6 +276,7 @@ export default function BookingScreen() {
                 </Text>
               </View>
             )}
+            {/* end:: Loading skeleton */}
           </View>
         )}
       </View>

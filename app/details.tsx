@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Image,
   ImageBackground,
+  Linking,
   Pressable,
   Text,
 } from "react-native";
@@ -32,6 +33,7 @@ import { TextInput } from "react-native-gesture-handler";
 import moment from "moment";
 import { bookHotelRoom } from "@/data/api";
 import { Button } from "@/components/ui/button";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -178,88 +180,62 @@ export default function BookDetails() {
   // check if added to favourites
   const checkIfAddedToFavorite = async () => {
     try {
-      // check if user is logged in
-      if (!auth?.token) {
-        return;
-      }
-
-      // make API call
+      if (!auth?.token) return;
       const response = await axios.get(
         `${baseUrl}/favorites/check/hotel/${data?.data?.hotel?._id}`,
         {
-          headers: {
-            Authorization: `Bearer ${auth?.token}`,
-          },
+          headers: { Authorization: `Bearer ${auth?.token}` },
         }
       );
-
-      console.log(response.data?.isFavorite);
-
       setIsFavorite(response.data?.isFavorite);
-    } catch (error: any) {
-      console.error(
-        JSON.stringify(
-          {
-            response: error.response,
-            message: error.message,
-            error: error,
-          },
-          null,
-          2
-        )
-      );
+    } catch (error) {
+      console.error(error);
     }
   };
+
   useEffect(() => {
     if (data) {
       checkIfAddedToFavorite();
     }
   }, []);
 
-  // handle add to favorite
   const handleAddToFavorite = async () => {
     setFavIsLoading(true);
-
     try {
-      // check if user is logged in
       if (!auth?.token) {
         alert("Please login to add to favourites!");
         return;
       }
-
-      // make API call
-      const response = await axios.post(
+      await axios.post(
         `${baseUrl}/favorites/hotel/${data?.data?.hotel?._id}`,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${auth?.token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${auth?.token}` } }
       );
-
-      // Toggle the favorite state
       setIsFavorite(!isFavorite);
-      
-      // Show success message based on the action
       toast.show(isFavorite ? "Removed from favorites" : "Added to favorites", {
         type: "success",
       });
-    } catch (error: any) {
-      console.error(
-        JSON.stringify(
-          {
-            response: error.response,
-            message: error.message,
-            error: error,
-          },
-          null,
-          2
-        )
-      );
+    } catch (error) {
+      console.error(error);
       toast.show("Failed to update favorites", { type: "error" });
     } finally {
       setFavIsLoading(false);
+    }
+  };
+
+  const handleCall = () => {
+    if (data?.data?.hotel?.contactInfo?.phone) {
+      Linking.openURL(`tel:${data.data.hotel.contactInfo?.phone}`);
+    } else {
+      toast.show("No phone number available", { type: "error" });
+    }
+  };
+
+  const handleEmail = () => {
+    if (data?.data?.hotel?.contactInfo?.email) {
+      Linking.openURL(`mailto:${data.data.hotel.contactInfo?.email}`);
+    } else {
+      toast.show("No email address available", { type: "error" });
     }
   };
 
@@ -351,6 +327,60 @@ export default function BookDetails() {
             </View>
           </View>
 
+          {/* Hotel Info */}
+          <View className="px-3 mb-6">
+            <Text className="text-lg font-semibold mb-3 dark:text-white">
+              Hotel Information
+            </Text>
+            <View className="space-y-2">
+              <Text className="text-gray-600 dark:text-gray-300">
+                {data?.data?.hotel?.description}
+              </Text>
+              <View className="flex-row items-center space-x-2">
+                <MaterialCommunityIcons
+                  name="map-marker"
+                  size={20}
+                  color={
+                    data?.data?.hotel?.location?.geo?.coordinates[1] === 0
+                      ? "#9ca3af"
+                      : "#6b7280"
+                  }
+                />
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {data?.data?.hotel?.location?.address}
+                </Text>
+              </View>
+              <View className="flex-row items-center space-x-2">
+                <MaterialCommunityIcons
+                  name="phone"
+                  size={20}
+                  color={
+                    data?.data?.hotel?.contactInfo?.phone === ""
+                      ? "#9ca3af"
+                      : "#6b7280"
+                  }
+                />
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {data?.data?.hotel?.contactInfo?.phone}
+                </Text>
+              </View>
+              <View className="flex-row items-center space-x-2">
+                <MaterialCommunityIcons
+                  name="email"
+                  size={20}
+                  color={
+                    data?.data?.hotel?.contactInfo?.email === ""
+                      ? "#9ca3af"
+                      : "#6b7280"
+                  }
+                />
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {data?.data?.hotel?.contactInfo?.email}
+                </Text>
+              </View>
+            </View>
+          </View>
+
           {/* description */}
           <HotelSection title="About">
             <Text className="text-slate-600 dark:text-slate-400">
@@ -369,38 +399,28 @@ export default function BookDetails() {
                   {room?.images?.length > 0 ? (
                     <Image
                       source={{ uri: room?.images[0] }}
-                      className="w-28 h-28 rounded-2xl mr-2"
+                      className="w-28 h-28 rounded-2xl mr-3"
                       resizeMode="cover"
                     />
                   ) : (
                     <View className="w-28 bg-slate-300 h-full rounded-2xl mr-2"></View>
                   )}
 
-                  <View className="flex-1">
+                  <View className="flex-1 ">
                     <View className="flex-row items-center justify-between h-6 mb-1">
-                      <Text className="font-medium text-base">
+                      <Text className="font-medium text-base dark:text-white">
                         Room {room.roomNumber}
                       </Text>
-                      <View
-                        className={`px-2 py-1 rounded-full h-6 justify-center items-center  ${
-                          room.isAvailable ? "bg-green-500/20" : "bg-red-500/20"
-                        }`}
-                      >
-                        <Text
-                          className={`text-center text-xs font-medium ${
-                            room.isAvailable ? "text-green-500" : "text-red-500"
-                          }`}
-                        >
-                          {room.isAvailable ? "Available" : "Unavailable"}
-                        </Text>
-                      </View>
+                      <Text className="font-medium text-base dark:text-white">
+                        ${room.pricePerNight}
+                      </Text>
                     </View>
 
-                    <Text className="text-slate-600 dark:text-slate-400 mb-1">
+                    <Text className="text-gray-600 dark:text-gray-300 mb-1">
                       Capacity: {room.capacity}
                     </Text>
                     {room.features?.length > 0 && (
-                      <Text className="text-slate-600 dark:text-slate-400">
+                      <Text className="text-gray-600 dark:text-gray-300">
                         Features: {room.features?.join(", ")}
                       </Text>
                     )}
@@ -417,9 +437,14 @@ export default function BookDetails() {
                           <Text>Book Now</Text>
                         </Pressable>
                       )}
-                      <Text className="font-bold text-xl mt-1">
-                        ${room.pricePerNight}{" "}
-                        <Text className="text-sm font-normal">/night</Text>
+                      <Text
+                        className={`${
+                          room.isAvailable
+                            ? "text-green-700 dark:text-green-300"
+                            : "text-red-700 dark:text-red-300"
+                        }`}
+                      >
+                        {room.isAvailable ? "Available" : "Unavailable"}
                       </Text>
                     </View>
                   </View>
@@ -427,6 +452,65 @@ export default function BookDetails() {
               ))}
             </View>
           </HotelSection>
+
+          {/* reviews */}
+          {data?.data?.hotel?.ratings &&
+            data?.data?.hotel?.ratings.length > 0 && (
+              <View className="px-3 mb-6">
+                <Text className="text-lg font-semibold mb-3 dark:text-white">
+                  Reviews
+                </Text>
+                {data?.data?.hotel?.ratings.map(
+                  (rating: any, index: number) => (
+                    <View
+                      key={index}
+                      className="mb-4 bg-white/50 dark:bg-slate-800/50 p-3 rounded-xl"
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center space-x-3">
+                          {rating.userImage ? (
+                            <Image
+                              source={{ uri: rating.userImage }}
+                              className="w-10 h-10 rounded-full"
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center">
+                              <MaterialCommunityIcons
+                                name="account"
+                                size={24}
+                                color={"#6b7280"}
+                              />
+                            </View>
+                          )}
+                          <View>
+                            <Text className="font-medium dark:text-white">
+                              {rating.user}
+                            </Text>
+                            <Text className="text-gray-500 text-sm">
+                              {new Date(rating.createdAt).toLocaleDateString()}
+                            </Text>
+                          </View>
+                        </View>
+                        <View className="flex-row items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <MaterialCommunityIcons
+                              key={i}
+                              name={i < rating.rating ? "star" : "star-outline"}
+                              size={16}
+                              color="#eab308"
+                            />
+                          ))}
+                        </View>
+                      </View>
+                      <Text className="text-gray-600 dark:text-gray-300 mt-2">
+                        {rating.review}
+                      </Text>
+                    </View>
+                  )
+                )}
+              </View>
+            )}
 
           {/* amenities */}
           <HotelSection title="Amenities">
@@ -451,7 +535,7 @@ export default function BookDetails() {
                   size={24}
                   color="black"
                 />
-                <Text className="">
+                <Text className="text-gray-600 dark:text-gray-300">
                   {data?.data?.hotel?.contactInfo?.phone}
                 </Text>
               </View>
@@ -461,13 +545,13 @@ export default function BookDetails() {
                   size={24}
                   color="black"
                 />
-                <Text className="">
+                <Text className="text-gray-600 dark:text-gray-300">
                   {data?.data?.hotel?.contactInfo?.email}
                 </Text>
               </View>
               <View className="flex-row items-center mb-2 gap-x-2">
                 <MaterialCommunityIcons name="web" size={24} color="black" />
-                <Text className="">
+                <Text className="text-gray-600 dark:text-gray-300">
                   {data?.data?.hotel?.contactInfo?.website}
                 </Text>
               </View>
@@ -491,28 +575,52 @@ export default function BookDetails() {
         </ScrollView>
       )}
 
-      {data && (
-        <View className="flex-row items-center justify-between px-4 py-3 bg-white dark:bg-slate-900">
-          <Pressable className="mr-10" onPress={handleAddToFavorite}>
+      {/* Bottom Actions */}
+      <View className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-white dark:bg-slate-800">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row space-x-3">
+            <Pressable
+              onPress={handleCall}
+              className="bg-green-500 p-3 rounded-full"
+            >
+              <Ionicons name="call" size={24} color="white" />
+            </Pressable>
+            <Pressable
+              onPress={handleEmail}
+              className="bg-blue-500 p-3 rounded-full"
+            >
+              <MaterialCommunityIcons name="email" size={24} color="white" />
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={handleAddToFavorite}
+            disabled={favIsLoading}
+            className="bg-yellow-500 px-6 py-3 rounded-xl flex-row items-center"
+          >
             {favIsLoading ? (
-              <ActivityIndicator size={"large"} color={"#eab308"} />
+              <MaterialCommunityIcons
+                name="loading"
+                size={20}
+                color="white"
+                className="animate-spin"
+              />
             ) : (
-              <AntDesign
-                name={isFavorite ? "heart" : "hearto"}
-                size={32}
-                color="#eab308"
+              <MaterialCommunityIcons
+                name={isFavorite ? "heart" : "heart-outline"}
+                size={20}
+                color="white"
               />
             )}
-          </Pressable>
-
-          <Pressable
-            onPress={() => toast.show("Toast message", { type: "success" })}
-            className="bg-yellow-500 h-12 px-12 items-center justify-center rounded-2xl"
-          >
-            <Text className="text-xl font-semibold text-white">Show toast</Text>
+            <Text className="text-white font-semibold ml-2">
+              {favIsLoading
+                ? "Updating..."
+                : isFavorite
+                ? "Remove from Favorites"
+                : "Add to Favorites"}
+            </Text>
           </Pressable>
         </View>
-      )}
+      </View>
 
       {!isLoading && (error || !data) && (
         <View className="flex-1 items-center justify-center">

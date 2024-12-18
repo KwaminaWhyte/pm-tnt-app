@@ -10,6 +10,8 @@ import { Image, View, Text } from "moti";
 import { FlatList, Pressable } from "react-native";
 import { useColorScheme } from "react-native";
 import useSWR from "swr";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import axios from "axios";
 
 export default function UserWishlist() {
   const colorScheme = useColorScheme();
@@ -19,10 +21,27 @@ export default function UserWishlist() {
 
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-  const { data, isLoading, error } = useSWR(
+  const { data, isLoading, error, mutate } = useSWR(
     `${baseUrl}/favorites`,
     fetcher(auth?.token)
   );
+
+  const handleUnfavorite = async (type: 'hotel' | 'vehicle', itemId: string) => {
+    try {
+      if (!auth?.token) {
+        alert("Please login to manage favourites!");
+        return;
+      }
+      await axios.post(
+        `${baseUrl}/favorites/${type}/${itemId}`,
+        {},
+        { headers: { Authorization: `Bearer ${auth?.token}` } }
+      );
+      mutate();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <View className="flex-1 p-4 px-3 bg-white/50 dark:bg-slate-950">
@@ -104,17 +123,110 @@ export default function UserWishlist() {
                       </View>
                     </View>
 
-                    <Pressable className="flex-row items-center px-3 bg-yellow-500 rounded-xl h-10 ml-2">
-                      <AntDesign name="hearto" size={14} color="#fff" />
-                      <Text className="ml-1 text-sm text-white">
-                        Unfavorite
-                      </Text>
+                    <Pressable 
+                      onPress={() => handleUnfavorite('hotel', item._id)}
+                      className="flex-row items-center justify-center bg-yellow-500 rounded-xl h-10 w-10 ml-2"
+                    >
+                      <AntDesign name="heart" size={24} color="#fff" />
                     </Pressable>
                   </View>
                 </View>
               </Pressable>
             )}
           />
+        </View>
+      )}
+
+      {/* list of vehicle favorites */}
+      {!isLoading && data?.vehicles && data?.vehicles.length > 0 && (
+        <View className="px-3">
+          <Text className="text-lg font-semibold mb-3 dark:text-white">
+            Favorite Vehicles
+          </Text>
+          <View className="space-y-3">
+            {data?.vehicles.map((vehicle: any) => (
+              <Pressable
+                key={vehicle._id}
+                onPress={() =>
+                  router.push(`/vehicle-details?vehicle=${vehicle._id}`)
+                }
+                className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden"
+              >
+                <View className="flex-row">
+                  {vehicle?.images?.length > 0 ? (
+                    <Image
+                      source={{ uri: vehicle.images[0] }}
+                      className="w-28 h-28 rounded-2xl mr-3"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-28 h-28 bg-gray-200 dark:bg-gray-700 rounded-2xl mr-3 items-center justify-center">
+                      <MaterialCommunityIcons
+                        name="car"
+                        size={48}
+                        color={colorScheme === "dark" ? "#9ca3af" : "#6b7280"}
+                      />
+                    </View>
+                  )}
+                  <View className="flex-1 py-2 pr-3">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="font-medium text-base dark:text-white">
+                        {vehicle.make} {vehicle.model}
+                      </Text>
+                    </View>
+                    <Text className="text-gray-600 dark:text-gray-300 mb-1">
+                      {vehicle.vehicleType} • {vehicle.year} •{" "}
+                      {vehicle.capacity} Seats
+                    </Text>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center space-x-1">
+                        <MaterialCommunityIcons
+                          name="map-marker"
+                          size={16}
+                          color={colorScheme === "dark" ? "#9ca3af" : "#6b7280"}
+                        />
+                        <Text className="text-gray-600 dark:text-gray-300">
+                          {vehicle.availability?.location?.city}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center">
+                        <View className="flex-row items-center space-x-2">
+                          <Text className="text-lg font-bold dark:text-white">
+                            ${vehicle.pricePerDay}
+                          </Text>
+                          <View
+                            className={`px-2 py-1 rounded-full ${
+                              vehicle.availability?.isAvailable
+                                ? "bg-green-100 dark:bg-green-900/30"
+                                : "bg-red-100 dark:bg-red-900/30"
+                            }`}
+                          >
+                            <Text
+                              className={`text-xs font-medium ${
+                                vehicle.availability?.isAvailable
+                                  ? "text-green-700 dark:text-green-300"
+                                  : "text-red-700 dark:text-red-300"
+                              }`}
+                            >
+                              {vehicle.availability?.isAvailable
+                                ? "Available"
+                                : "Not Available"}
+                            </Text>
+                          </View>
+                        </View>
+                        <Pressable 
+                          onPress={() => handleUnfavorite('vehicle', vehicle._id)}
+                          className="flex-row items-center justify-center bg-yellow-500 rounded-xl h-10 w-10 ml-2"
+                        >
+                          <AntDesign name="heart" size={24} color="#fff" />
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </View>
         </View>
       )}
 

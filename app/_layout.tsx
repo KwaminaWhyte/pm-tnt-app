@@ -63,9 +63,19 @@ export default function RootLayout() {
                     options={{ headerShown: false }}
                   />
                   <Stack.Screen
+                    name="vehicle-details"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
                     name="wishlist"
                     options={{
                       title: "My Favorites",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="bookings"
+                    options={{
+                      title: "My Bookings",
                     }}
                   />
                   <Stack.Screen

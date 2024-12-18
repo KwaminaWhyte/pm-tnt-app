@@ -5,7 +5,7 @@ import { Pressable } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-export const ErrorScreen = () => {
+export const ErrorScreen = ({ message }: { message?: string | undefined }) => {
   return (
     <AnimatePresence exitBeforeEnter>
       <View className="flex-1 items-center justify-center bg-white dark:bg-red-500/5 -mt-36">
@@ -34,7 +34,7 @@ export const ErrorScreen = () => {
           transition={{ type: "timing", duration: 300, delay: 100 }}
           className="text-center text-gray-600 dark:text-white"
         >
-          Something went wrong
+          {message || "Something went wrong"}
         </Text>
         <View
           className="mt-8"
