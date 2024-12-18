@@ -238,8 +238,13 @@ export default function BookDetails() {
         }
       );
 
-      alert("Added to Favourites successfully!");
-      console.log(JSON.stringify(response.data));
+      // Toggle the favorite state
+      setIsFavorite(!isFavorite);
+      
+      // Show success message based on the action
+      toast.show(isFavorite ? "Removed from favorites" : "Added to favorites", {
+        type: "success",
+      });
     } catch (error: any) {
       console.error(
         JSON.stringify(
@@ -252,6 +257,7 @@ export default function BookDetails() {
           2
         )
       );
+      toast.show("Failed to update favorites", { type: "error" });
     } finally {
       setFavIsLoading(false);
     }

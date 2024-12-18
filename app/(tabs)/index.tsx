@@ -33,7 +33,7 @@ export default function HomeScreen() {
 
   const { top } = useSafeAreaInsets();
 
-  if (data) console.log(JSON.stringify(data, null, 2));
+  // if (data) console.log(JSON.stringify(data, null, 2));
 
   return (
     <KeyboardAvoidingView

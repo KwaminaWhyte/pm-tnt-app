@@ -4,6 +4,7 @@ import {
   LockOutlined,
   MapOutlined,
   QuestionCircleOutlined,
+  ShoppingCart,
 } from "@/components/icons/profile";
 import { ThemedText } from "@/components/ThemedText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -99,7 +100,7 @@ const LoggedInProfile = () => {
       path: "/personal-info",
       icon: (
         <UserOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -110,7 +111,18 @@ const LoggedInProfile = () => {
       path: "/addresses",
       icon: (
         <MapOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
+            colorScheme === "dark" && "opacity-60"
+          } mr-2`}
+        />
+      ),
+    },
+    {
+      label: "Bookings",
+      path: "/bookings",
+      icon: (
+        <ShoppingCart
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -121,7 +133,7 @@ const LoggedInProfile = () => {
       path: "/wishlist",
       icon: (
         <HeartOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -132,7 +144,7 @@ const LoggedInProfile = () => {
       path: "/security",
       icon: (
         <LockOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -143,7 +155,7 @@ const LoggedInProfile = () => {
       path: "/support",
       icon: (
         <QuestionCircleOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
