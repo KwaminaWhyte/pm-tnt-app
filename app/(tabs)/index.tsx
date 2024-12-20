@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
+  ActivityIndicator,
 } from "react-native";
 import logo from "@/assets/images/image.png";
 import { Href, router } from "expo-router";
@@ -22,9 +23,17 @@ import { fetcher } from "@/data/fetcher";
 import { DestinationCardSkeleton } from "@/components/skeletons/destinations";
 import HeroCarousel from "@/components/ui/hero-carousel";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
+  const { auth } = useAuth();
+  const [favLoadingStates, setFavLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
+  const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
 
   // fetch destinations
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -34,6 +43,54 @@ export default function HomeScreen() {
   const { top } = useSafeAreaInsets();
 
   // if (data) console.log(JSON.stringify(data, null, 2));
+
+  // check if packages are in favorites
+  const checkFavorites = async (packageIds: string[]) => {
+    try {
+      if (!auth?.token) return;
+      const promises = packageIds.map((id) =>
+        axios.get(`${baseUrl}/favorites/check/package/${id}`, {
+          headers: { Authorization: `Bearer ${auth?.token}` },
+        })
+      );
+      const responses = await Promise.all(promises);
+      const newFavorites = responses.reduce((acc, response, index) => {
+        acc[packageIds[index]] = response.data?.isFavorite;
+        return acc;
+      }, {} as { [key: string]: boolean });
+      setFavorites(newFavorites);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // handle favorite toggle
+  const handleFavoriteToggle = async (packageId: string) => {
+    if (!auth?.token) {
+      alert("Please login to manage favourites!");
+      return;
+    }
+    setFavLoadingStates((prev) => ({ ...prev, [packageId]: true }));
+    try {
+      await axios.post(
+        `${baseUrl}/favorites/package/${packageId}`,
+        {},
+        { headers: { Authorization: `Bearer ${auth?.token}` } }
+      );
+      setFavorites((prev) => ({ ...prev, [packageId]: !prev[packageId] }));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setFavLoadingStates((prev) => ({ ...prev, [packageId]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (data?.data) {
+      const packageIds = data.data.map((item: any) => item._id);
+      checkFavorites(packageIds);
+    }
+  }, [data, auth?.token]);
 
   return (
     <KeyboardAvoidingView
@@ -99,7 +156,73 @@ export default function HomeScreen() {
                 isLoading ? (
                   <DestinationCardSkeleton />
                 ) : (
-                  <TripPackageCard path={`/trips/${item._id}`} data={item} />
+                  <Pressable
+                    onPress={() =>
+                      router.push(`/package-details?id=${item._id}` as Href)
+                    }
+                    className="bg-white dark:bg-slate-900 mr-4 rounded-3xl overflow-hidden shadow-sm w-80 p-2 border-[2px] border-slate-200 dark:border-slate-700"
+                  >
+                    <View className="h-40 bg-slate-200 dark:bg-slate-800 rounded-2xl">
+                      {item.images && item.images.length > 0 ? (
+                        <Image
+                          source={{ uri: item.images[0] }}
+                          className="w-full h-full rounded-2xl"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className="w-full h-full items-center justify-center rounded-2xl">
+                          <MaterialCommunityIcons
+                            name="image-off"
+                            size={48}
+                            color="#94a3b8"
+                          />
+                        </View>
+                      )}
+                      {/* Favorite Button */}
+                      <Pressable
+                        onPress={() => handleFavoriteToggle(item._id)}
+                        className="absolute top-2 right-2 w-10 h-10 bg-white/80 dark:bg-slate-800/80 rounded-full items-center justify-center"
+                      >
+                        {favLoadingStates[item._id] ? (
+                          <ActivityIndicator size="small" color="#eab308" />
+                        ) : (
+                          <MaterialCommunityIcons
+                            name={
+                              favorites[item._id] ? "heart" : "heart-outline"
+                            }
+                            size={20}
+                            color={favorites[item._id] ? "#ef4444" : "#64748b"}
+                          />
+                        )}
+                      </Pressable>
+                    </View>
+                    <View className="p-3 pb-2">
+                      <ThemedText className="text-lg font-semibold mb-1">
+                        {item.name}
+                      </ThemedText>
+                      <ThemedText
+                        className="text-slate-600 dark:text-slate-400 text-sm mb-2"
+                        numberOfLines={2}
+                      >
+                        {item.description}
+                      </ThemedText>
+                      <View className="flex-row justify-between items-center">
+                        <View className="flex-row items-center">
+                          <MaterialCommunityIcons
+                            name="clock-outline"
+                            size={20}
+                            color="#eab308"
+                          />
+                          <ThemedText className="ml-1 text-sm">
+                            {item.duration.days}D/{item.duration.nights}N
+                          </ThemedText>
+                        </View>
+                        <ThemedText className="font-bold text-yellow-500">
+                          ${item.price}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </Pressable>
                 )
               }
             />
@@ -188,7 +311,73 @@ export default function HomeScreen() {
                 packagesAPI.isLoading ? (
                   <DestinationCardSkeleton />
                 ) : (
-                  <TripPackageCard path={`/packages/${item._id}`} data={item} />
+                  <Pressable
+                    onPress={() =>
+                      router.push(`/package-details?id=${item._id}` as Href)
+                    }
+                    className="bg-white dark:bg-slate-900 mr-4 rounded-xl overflow-hidden shadow-sm w-72"
+                  >
+                    <View className="h-40 bg-slate-200 dark:bg-slate-800">
+                      {item.images && item.images.length > 0 ? (
+                        <Image
+                          source={{ uri: item.images[0] }}
+                          className="w-full h-full"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className="w-full h-full items-center justify-center">
+                          <MaterialCommunityIcons
+                            name="image-off"
+                            size={48}
+                            color="#94a3b8"
+                          />
+                        </View>
+                      )}
+                      {/* Favorite Button */}
+                      <Pressable
+                        onPress={() => handleFavoriteToggle(item._id)}
+                        className="absolute top-2 right-2 w-8 h-8 bg-white/80 dark:bg-slate-800/80 rounded-full items-center justify-center"
+                      >
+                        {favLoadingStates[item._id] ? (
+                          <ActivityIndicator size="small" color="#eab308" />
+                        ) : (
+                          <MaterialCommunityIcons
+                            name={
+                              favorites[item._id] ? "heart" : "heart-outline"
+                            }
+                            size={20}
+                            color={favorites[item._id] ? "#ef4444" : "#64748b"}
+                          />
+                        )}
+                      </Pressable>
+                    </View>
+                    <View className="p-3">
+                      <ThemedText className="text-lg font-semibold mb-1">
+                        {item.name}
+                      </ThemedText>
+                      <ThemedText
+                        className="text-slate-600 dark:text-slate-400 text-sm mb-2"
+                        numberOfLines={2}
+                      >
+                        {item.description}
+                      </ThemedText>
+                      <View className="flex-row justify-between items-center">
+                        <View className="flex-row items-center">
+                          <MaterialCommunityIcons
+                            name="clock-outline"
+                            size={20}
+                            color="#eab308"
+                          />
+                          <ThemedText className="ml-1 text-sm">
+                            {item.duration.days}D/{item.duration.nights}N
+                          </ThemedText>
+                        </View>
+                        <ThemedText className="font-bold text-yellow-500">
+                          ${item.price}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </Pressable>
                 )
               }
             />
