@@ -42,17 +42,14 @@ export const Button = ({
     >
       {isLoading && (
         <View className="mr-2">
-          <ActivityIndicator
-            size="small"
-            color={colorScheme === "dark" ? "white" : "black"}
-          />
+          <ActivityIndicator size="small" color={"#fff"} />
         </View>
       )}
       {startIcon && <View className="mr-2">{startIcon}</View>}
       <Text
         className={`font-medium text-base ${
           variant === "solid"
-            ? "text-black"
+            ? "text-white"
             : variant === "outline"
             ? "text-yellow-500"
             : "text-slate-900 dark:text-white"

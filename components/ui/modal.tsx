@@ -126,7 +126,7 @@ export const CustomAlertModal = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ type: "timing", duration: 300 }}
-          className={`absolute h-screen w-screen top-0 left-0 bg-black/50 items-center justify-center`}
+          className={`absolute h-screen w-screen top-0 left-0 bg-black/50 items-center justify-center z-[999]`}
           onStartShouldSetResponder={() => true}
           onResponderRelease={() => setOpen(false)}
         >

@@ -10,16 +10,19 @@ import { AnimatePresence, MotiText, MotiView } from "moti";
 import { useState } from "react";
 import {
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Toast from "react-native-toast-message";
+import { useToast } from "react-native-toast-notifications";
 
 export default function LoginScreen() {
+  const toast = useToast();
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const { login, auth } = useAuth();
 
@@ -50,17 +53,21 @@ export default function LoginScreen() {
   // Handle form submission
   const [isLoading, setIsLoading] = useState(false);
   const submitForm = async () => {
+    console.log({ auth, values });
+
     setIsLoading(true);
     try {
       // check for validation errors
       const validationErrors = validate(values);
       if (Object.keys(validationErrors).length > 0) {
         // show toast message based on error
-        Toast.show({
-          type: "error",
-          text1: "Invalid Credentials",
-          text2: validationErrors.email || validationErrors.password,
-        });
+        toast.show(
+          validationErrors.email ||
+            validationErrors.password ||
+            "Invalid credentials provided!",
+          { type: "danger" }
+        );
+
         return;
       }
 
@@ -71,15 +78,15 @@ export default function LoginScreen() {
 
       login(response.data);
       resetForm();
-      router.push("/(home)/profile" as Href);
+      router.push("/profile" as Href);
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: error.response.data ? "Invalid Credentials" : "Unexpected Error",
-        text2:
-          error.response.data?.errors[0]?.message ||
-          "Something went wrong" + error.message,
-      });
+      console.log(JSON.stringify(error.response, null, 2));
+
+      toast.show(
+        error.response.data?.errors[0]?.message ||
+          "Something went wrong! " + error.message,
+        { type: "danger" }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -92,32 +99,32 @@ export default function LoginScreen() {
       keyboardVerticalOffset={100}
     >
       <SafeAreaView className="flex-1 bg-white dark:bg-slate-950">
-        <AnimatePresence>
-          <MotiView className="flex-1 gap-y-4">
-            {/* illustration */}
-            <MotiView className="h-[30vh] overflow-hidden justify-center items-center">
-              <Image
-                source={require("@/assets/images/illustrations/journey.png")}
-                className="object-contain w-[70%] h-full"
-              />
-            </MotiView>
-
-            {/* form*/}
-            <MotiView className="flex-1 px-4 gap-y-8">
-              {/* welcome text */}
-              <MotiView>
-                <MotiText className="font-bold text-3xl text-slate-900 dark:text-white">
-                  Welcome back!
-                </MotiText>
-                <Text className="text-slate-900 dark:text-white font text-sm opacity-50">
-                  Sign in to your account
-                </Text>
+        <ScrollView className="flex-1">
+          <AnimatePresence>
+            <MotiView className="flex-1 gap-y-4">
+              {/* illustration */}
+              <MotiView className="items-center justify-center">
+                <Image
+                  source={require("@/assets/images/illustrations/journey.png")}
+                  className="w-56 h-56 object-contain"
+                />
               </MotiView>
 
-              {/* login form */}
-              <MotiView className="flex-1">
-                <View className="space-y-6">
-                  <View>
+              {/* form*/}
+              <MotiView className="flex-1 px-4 gap-y-8">
+                {/* welcome text */}
+                <MotiView>
+                  <MotiText className="font-bold text-3xl text-slate-900 dark:text-white">
+                    Welcome back!
+                  </MotiText>
+                  <Text className="text-slate-900 dark:text-white font text-sm opacity-50">
+                    Sign in to your account
+                  </Text>
+                </MotiView>
+
+                {/* login form */}
+                <MotiView className="flex-1">
+                  <View className="">
                     <Input
                       value={values.email}
                       onChangeText={(text) => handleChange("email", text)}
@@ -127,9 +134,7 @@ export default function LoginScreen() {
                       }
                       errorMessage={errors.email}
                     />
-                  </View>
 
-                  <View>
                     <PasswordInput
                       value={values.password}
                       onChangeText={(text) => handleChange("password", text)}
@@ -139,41 +144,41 @@ export default function LoginScreen() {
                       }
                       errorMessage={errors.password}
                     />
+
+                    <View className="flex-row justify-end">
+                      <Pressable>
+                        <Text className="font-medium text-yellow-500">
+                          Forgot password?
+                        </Text>
+                      </Pressable>
+                    </View>
                   </View>
 
-                  <View className="flex-row justify-end">
-                    <Pressable>
-                      <Text className="font-medium text-yellow-500">
-                        Forgot password?
-                      </Text>
-                    </Pressable>
+                  <View className="mt-8">
+                    <Button
+                      isLoading={isLoading}
+                      label="Sign In"
+                      variant="solid"
+                      onClick={submitForm}
+                    />
                   </View>
-                </View>
+                </MotiView>
 
-                <View className="mt-8">
-                  <Button
-                    isLoading={isLoading}
-                    label="Sign In"
-                    variant="solid"
-                    onClick={submitForm}
-                  />
-                </View>
-              </MotiView>
-
-              {/* create account link */}
-              <MotiView className="flex-row items-center justify-center py-4">
-                <Text className="font text-slate-900 dark:text-white opacity-50">
-                  Don't have an account?{" "}
-                </Text>
-                <Pressable onPress={() => router.push("/register" as Href)}>
-                  <Text className="font-medium text-yellow-500">
-                    Create account
+                {/* create account link */}
+                <MotiView className="flex-row items-center justify-center py-4">
+                  <Text className="font text-slate-900 dark:text-white opacity-50">
+                    Don't have an account?{" "}
                   </Text>
-                </Pressable>
+                  <Pressable onPress={() => router.push("/register" as Href)}>
+                    <Text className="font-medium text-yellow-500">
+                      Create account
+                    </Text>
+                  </Pressable>
+                </MotiView>
               </MotiView>
             </MotiView>
-          </MotiView>
-        </AnimatePresence>
+          </AnimatePresence>
+        </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

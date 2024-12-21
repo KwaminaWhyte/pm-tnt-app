@@ -24,16 +24,16 @@ export const Input = ({
   const colorScheme = useColorScheme();
 
   return (
-    <View>
+    <View className="h-14 mb-6">
       {/* label */}
       {label && (
-        <Text className="font-semibold text-lg text-slate-900 dark:text-white mb-2">
+        <Text className="font-semibold text-lg text-slate-900 dark:text-white mb-1">
           {label}
         </Text>
       )}
 
       {/* input wrapper */}
-      <View className="h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex-row items-center px-4 border border-slate-200 dark:border-slate-700">
+      <View className=" rounded-2xl flex-row items-center px-4 border-[2px] border-slate-200 dark:border-slate-700">
         {startContent && <View className="justify-center">{startContent}</View>}
         <TextInput
           placeholder={placeholder}
@@ -41,7 +41,7 @@ export const Input = ({
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
-          className="flex-1 ml-2 font text-black dark:text-white h-12"
+          className="flex-1 ml-2 font text-slate-900 dark:text-white h-12"
         />
         {endContent && (
           <View className="justify-center ml-2">{endContent}</View>

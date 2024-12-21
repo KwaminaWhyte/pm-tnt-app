@@ -4,6 +4,7 @@ import {
   LockOutlined,
   MapOutlined,
   QuestionCircleOutlined,
+  ShoppingCart,
 } from "@/components/icons/profile";
 import { ThemedText } from "@/components/ThemedText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -47,21 +48,12 @@ const WelcomeScreen = () => {
         </ThemedText>
       </View>
 
-      <View className="w-full gap-y-4">
+      <View className="w-full gap-y-5 px-6">
         <Pressable
           onPress={() => router.push("/login" as Href)}
           className="h-14 bg-yellow-500 rounded-2xl items-center justify-center"
         >
-          <Text className="text-black font-medium text-base">Sign In</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/register" as Href)}
-          className="h-14 bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
-        >
-          <Text className="text-yellow-500 font-medium text-base">
-            Create Account
-          </Text>
+          <Text className="font-medium text-lg text-white">Sign In</Text>
         </Pressable>
 
         <View className="flex-row items-center justify-center mt-4">
@@ -71,10 +63,12 @@ const WelcomeScreen = () => {
         </View>
 
         <Pressable
-          onPress={() => router.push("/(home)" as Href)}
-          className="h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl items-center justify-center"
+          onPress={() => router.push("/register" as Href)}
+          className="h-14 bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
         >
-          <ThemedText className="font text-base">Continue as Guest</ThemedText>
+          <Text className="text-yellow-500 font-medium text-lg">
+            Create Account
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -106,7 +100,7 @@ const LoggedInProfile = () => {
       path: "/personal-info",
       icon: (
         <UserOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -117,7 +111,18 @@ const LoggedInProfile = () => {
       path: "/addresses",
       icon: (
         <MapOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
+            colorScheme === "dark" && "opacity-60"
+          } mr-2`}
+        />
+      ),
+    },
+    {
+      label: "Bookings",
+      path: "/bookings",
+      icon: (
+        <ShoppingCart
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -128,7 +133,7 @@ const LoggedInProfile = () => {
       path: "/wishlist",
       icon: (
         <HeartOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -139,7 +144,7 @@ const LoggedInProfile = () => {
       path: "/security",
       icon: (
         <LockOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -150,7 +155,7 @@ const LoggedInProfile = () => {
       path: "/support",
       icon: (
         <QuestionCircleOutlined
-          className={`w-5 h-5 text-yellow-400 ${
+          className={`w-6 h-6 text-yellow-400 ${
             colorScheme === "dark" && "opacity-60"
           } mr-2`}
         />
@@ -161,10 +166,7 @@ const LoggedInProfile = () => {
   return (
     <ScrollView className="flex-1 bg-slate-100 dark:bg-slate-950">
       {/* Profile Header */}
-      <View
-        className="items-center bg-white dark:bg-slate-900 pt-8 pb-6"
-        style={{ paddingTop: top + 32 }}
-      >
+      <View className="items-center pt-4 pb-6">
         <Image
           source={{
             uri: "https://t3.ftcdn.net/jpg/04/77/87/44/360_F_477874414_kSQ9ip26804g8B3ItYsh5XsjNRgqf693.jpg",
@@ -180,8 +182,8 @@ const LoggedInProfile = () => {
       </View>
 
       {/* Navigation Items */}
-      <View className="px-4 py-6">
-        <View className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+      <View className=" py-6">
+        <View className="bg-white dark:bg-slate-900">
           {profileNav.map((item, index) => (
             <Pressable
               key={index}
@@ -199,12 +201,14 @@ const LoggedInProfile = () => {
           ))}
         </View>
 
-        <Pressable
-          onPress={handleSignOut}
-          className="mt-8 h-14 bg-red-500 rounded-2xl items-center justify-center"
-        >
-          <Text className="text-white font-medium text-base">Sign Out</Text>
-        </Pressable>
+        <View className="px-4">
+          <Pressable
+            onPress={handleSignOut}
+            className="mt-8 h-14 bg-red-500 rounded-2xl items-center justify-center"
+          >
+            <Text className="text-white font-medium text-base">Sign Out</Text>
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );
