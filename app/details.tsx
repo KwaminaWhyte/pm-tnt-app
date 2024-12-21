@@ -38,7 +38,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { PaymentForm } from "@/components/ui/payment-form";
 
 export default function BookDetails() {
-  const baseUrl = process.env.PM_TNT_API_BASE_URL;
+  const baseUrl =
+    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
   const { id } = useGlobalSearchParams();
   const { auth } = useAuth();
 
