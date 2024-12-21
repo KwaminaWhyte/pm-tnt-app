@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseUrl = process.env.PM_TNT_API_BASE_URL;
+const baseUrl = "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
 
 export const bookHotelRoom = async (
   roomId: string,

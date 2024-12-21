@@ -19,7 +19,8 @@ export default function UserWishlist() {
 
   console.log(auth?.token);
 
-  const baseUrl = process.env.PM_TNT_API_BASE_URL;
+  const baseUrl =
+    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
 
   const { data, isLoading, error, mutate } = useSWR(
     `${baseUrl}/favorites`,
