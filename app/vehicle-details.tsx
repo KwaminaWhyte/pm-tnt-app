@@ -563,8 +563,8 @@ export default function VehicleDetails() {
               {favIsLoading
                 ? "Updating..."
                 : isFavorite
-                ? "Remove from Favorites"
-                : "Add to Favorites"}
+                ? "Unfavorite"
+                : "Favorite"}
             </Text>
           </Pressable>
         </View>

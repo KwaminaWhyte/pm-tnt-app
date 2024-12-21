@@ -41,18 +41,17 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <ToastProvider
-          offsetTop={60}
-          duration={2000}
-          animationDuration={250}
-          placement="top"
-        >
-          <BottomSheetProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+        <AuthProvider>
+          <ToastProvider
+            offsetTop={60}
+            duration={2000}
+            animationDuration={250}
+            placement="top"
+          >
             <AlertModalProvider>
-              <ThemeProvider
-                value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-              >
+              <BottomSheetProvider>
                 <Stack>
                   <Stack.Screen
                     name="(tabs)"
@@ -88,12 +87,11 @@ export default function RootLayout() {
                   />
                   <Stack.Screen name="+not-found" />
                 </Stack>
-                <StatusBar style="auto" />
-              </ThemeProvider>
+              </BottomSheetProvider>
             </AlertModalProvider>
-          </BottomSheetProvider>
-        </ToastProvider>
-      </AuthProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

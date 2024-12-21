@@ -346,7 +346,11 @@ export default function BookingScreen() {
                     <View className="relative">
                       <Pressable
                         onPress={() =>
-                          router.push(`/vehicle-details?id=${item._id}` as Href)
+                          router.push(
+                            `/vehicle-details?vehicle=${JSON.stringify(
+                              item
+                            )}` as Href
+                          )
                         }
                         className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full"
                       >
@@ -376,7 +380,9 @@ export default function BookingScreen() {
                             ) : (
                               <MaterialCommunityIcons
                                 name={
-                                  favorites[item._id] ? "heart" : "heart-outline"
+                                  favorites[item._id]
+                                    ? "heart"
+                                    : "heart-outline"
                                 }
                                 size={20}
                                 color={
@@ -494,16 +500,18 @@ export default function BookingScreen() {
 
                             {/* Features */}
                             {item.features &&
-                              item.features.map((feature, index) => (
-                                <View
-                                  key={index}
-                                  className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full mx-1"
-                                >
-                                  <ThemedText className="text-sm">
-                                    {feature}
-                                  </ThemedText>
-                                </View>
-                              ))}
+                              item.features.map(
+                                (feature: any, index: number) => (
+                                  <View
+                                    key={index}
+                                    className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full mx-1"
+                                  >
+                                    <ThemedText className="text-sm">
+                                      {feature}
+                                    </ThemedText>
+                                  </View>
+                                )
+                              )}
                           </ScrollView>
                         </View>
                       </Pressable>
@@ -537,7 +545,7 @@ export default function BookingScreen() {
                   </View>
                 ) : (
                   <View className="">
-                    {data?.data?.map((item) => (
+                    {data?.data?.map((item: any) => (
                       <Pressable
                         key={item._id}
                         onPress={() =>

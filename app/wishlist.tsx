@@ -26,7 +26,10 @@ export default function UserWishlist() {
     fetcher(auth?.token)
   );
 
-  const handleUnfavorite = async (type: 'hotel' | 'vehicle', itemId: string) => {
+  const handleUnfavorite = async (
+    type: "hotel" | "vehicle",
+    itemId: string
+  ) => {
     try {
       if (!auth?.token) {
         alert("Please login to manage favourites!");
@@ -123,8 +126,8 @@ export default function UserWishlist() {
                       </View>
                     </View>
 
-                    <Pressable 
-                      onPress={() => handleUnfavorite('hotel', item._id)}
+                    <Pressable
+                      onPress={() => handleUnfavorite("hotel", item._id)}
                       className="flex-row items-center justify-center bg-yellow-500 rounded-xl h-10 w-10 ml-2"
                     >
                       <AntDesign name="heart" size={24} color="#fff" />
@@ -148,7 +151,9 @@ export default function UserWishlist() {
               <Pressable
                 key={vehicle._id}
                 onPress={() =>
-                  router.push(`/vehicle-details?vehicle=${vehicle._id}`)
+                  router.push(
+                    `/vehicle-details?vehicle=${JSON.stringify(vehicle)}`
+                  )
                 }
                 className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden"
               >
@@ -214,8 +219,10 @@ export default function UserWishlist() {
                             </Text>
                           </View>
                         </View>
-                        <Pressable 
-                          onPress={() => handleUnfavorite('vehicle', vehicle._id)}
+                        <Pressable
+                          onPress={() =>
+                            handleUnfavorite("vehicle", vehicle._id)
+                          }
                           className="flex-row items-center justify-center bg-yellow-500 rounded-xl h-10 w-10 ml-2"
                         >
                           <AntDesign name="heart" size={24} color="#fff" />

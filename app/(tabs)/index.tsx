@@ -1,7 +1,7 @@
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { BenefitsCard, TripPackageCard } from "@/components/ui/cards";
 import { benefits } from "@/data/constant-data";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import {
   FlatList,
   Image,
@@ -26,23 +26,85 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { CustomBottomSheet } from "@/components/ui/bottom-sheet";
+import { TravelDocsForm } from "@/components/ui/travel-docs-form";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
+  const { top } = useSafeAreaInsets();
   const { auth } = useAuth();
+  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const [showTravelDocsForm, setShowTravelDocsForm] = useState(false);
   const [favLoadingStates, setFavLoadingStates] = useState<{
     [key: string]: boolean;
   }>({});
   const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
 
-  // fetch destinations
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  const { isLoading, data, error } = useSWR(`${baseUrl}/packages`, fetcher());
-  const packagesAPI = useSWR(`${baseUrl}/packages`, fetcher());
+  // Fetch hotels from API
+  const { data: hotelsData, isLoading: isLoadingHotels } = useSWR(
+    `${baseUrl}/hotels/public?limit=4`,
+    fetcher()
+  );
 
-  const { top } = useSafeAreaInsets();
+  // Fetch packages from API
+  const { data: packagesData, isLoading: isLoadingPackages } = useSWR(
+    `${baseUrl}/packages`,
+    fetcher()
+  );
 
-  // if (data) console.log(JSON.stringify(data, null, 2));
+  useEffect(() => {
+    if (hotelsData?.data) {
+      const itemIds = hotelsData.data.map((item: any) => item._id);
+      checkHotelFavorites(itemIds);
+    }
+  }, [hotelsData, auth?.token]);
+
+  // check if hotels are in favorites
+  const checkHotelFavorites = async (itemIds: string[]) => {
+    try {
+      if (!auth?.token) return;
+      const promises = itemIds.map((id) =>
+        axios.get(`${baseUrl}/favorites/check/hotel/${id}`, {
+          headers: { Authorization: `Bearer ${auth?.token}` },
+        })
+      );
+      const responses = await Promise.all(promises);
+      const newFavorites = responses.reduce((acc, response, index) => {
+        acc[itemIds[index]] = response.data?.isFavorite || false;
+        return acc;
+      }, {} as { [key: string]: boolean });
+      setFavorites(newFavorites);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // handle favorite toggle for hotels
+  const handleFavoriteToggle = async (itemId: string, e?: any) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (!auth?.token) {
+      alert("Please login to add to favourites!");
+      return;
+    }
+    setFavLoadingStates((prev) => ({ ...prev, [itemId]: true }));
+    try {
+      await axios.post(
+        `${baseUrl}/favorites/hotel/${itemId}`,
+        {},
+        { headers: { Authorization: `Bearer ${auth?.token}` } }
+      );
+      setFavorites((prev) => {
+        const newState = { ...prev, [itemId]: !prev[itemId] };
+        return newState;
+      });
+    } catch (error) {
+      console.error(JSON.stringify(error, null, 2));
+    } finally {
+      setFavLoadingStates((prev) => ({ ...prev, [itemId]: false }));
+    }
+  };
 
   // check if packages are in favorites
   const checkFavorites = async (packageIds: string[]) => {
@@ -65,7 +127,7 @@ export default function HomeScreen() {
   };
 
   // handle favorite toggle
-  const handleFavoriteToggle = async (packageId: string) => {
+  const handleFavoriteTogglePackage = async (packageId: string) => {
     if (!auth?.token) {
       alert("Please login to manage favourites!");
       return;
@@ -86,11 +148,11 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    if (data?.data) {
-      const packageIds = data.data.map((item: any) => item._id);
+    if (packagesData?.data) {
+      const packageIds = packagesData.data.map((item: any) => item._id);
       checkFavorites(packageIds);
     }
-  }, [data, auth?.token]);
+  }, [packagesData, auth?.token]);
 
   return (
     <KeyboardAvoidingView
@@ -133,13 +195,9 @@ export default function HomeScreen() {
           {/* featured destinations */}
           <View className="py-8 pb-4 ">
             <View className="flex-row px-4 justify-between items-center mb-2">
-              <ThemedText className="font-semibold text-xl">
+              <ThemedText className="font-semibold text-2xl">
                 Featured Destinations
               </ThemedText>
-
-              <Pressable className="bg-yellow-500 flex justify-center items-center rounded-xl py-1 px-3 h-10">
-                <ThemedText className="font">View All</ThemedText>
-              </Pressable>
             </View>
 
             <FlatList
@@ -147,13 +205,13 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               style={{ paddingLeft: 8 }}
               data={
-                isLoading
+                isLoadingPackages
                   ? [{ _id: "1" }, { _id: "2" }, { _id: "3" }]
-                  : data?.data
+                  : packagesData?.data
               }
               keyExtractor={(item) => item?._id}
               renderItem={({ item }) =>
-                isLoading ? (
+                isLoadingPackages ? (
                   <DestinationCardSkeleton />
                 ) : (
                   <Pressable
@@ -180,7 +238,7 @@ export default function HomeScreen() {
                       )}
                       {/* Favorite Button */}
                       <Pressable
-                        onPress={() => handleFavoriteToggle(item._id)}
+                        onPress={() => handleFavoriteTogglePackage(item._id)}
                         className="absolute top-2 right-2 w-10 h-10 bg-white/80 dark:bg-slate-800/80 rounded-full items-center justify-center"
                       >
                         {favLoadingStates[item._id] ? (
@@ -227,116 +285,70 @@ export default function HomeScreen() {
               }
             />
 
-            {(data?.destinations?.length === 0 || !data) && !isLoading && (
-              <View className="items-center mb-4">
-                {colorScheme === "dark" ? (
-                  <Image
-                    source={require("@/assets/images/dark-no-globe.png")}
-                    className="w-1/2 h-36"
-                  />
-                ) : (
-                  <Image
-                    source={require("@/assets/images/no-globe.png")}
-                    className="w-1/2 h-36"
-                  />
-                )}
-                <Text className="text-slate-600 dark:text-slate-400 font-light text-base">
-                  No destinations found yet...
-                </Text>
-              </View>
-            )}
+            {(packagesData?.data?.length === 0 || !packagesData) &&
+              !isLoadingPackages && (
+                <View className="items-center mb-4">
+                  {colorScheme === "dark" ? (
+                    <Image
+                      source={require("@/assets/images/dark-no-globe.png")}
+                      className="w-1/2 h-36"
+                    />
+                  ) : (
+                    <Image
+                      source={require("@/assets/images/no-globe.png")}
+                      className="w-1/2 h-36"
+                    />
+                  )}
+                  <Text className="text-slate-600 dark:text-slate-400 font-light text-base">
+                    No destinations found yet...
+                  </Text>
+                </View>
+              )}
           </View>
 
-          {/* extra services */}
-          <View className="pt-4 px-4">
-            <ThemedText className="font-semibold text-xl mb-2">
-              Quick Find
-            </ThemedText>
-
-            <HeroCarousel
-              carouselData={[
-                {
-                  title: "Travel Documents",
-                  description:
-                    "Let's assist you to acquire any travel documents you may need",
-                  ctaText: "Learn More",
-                  backgroundImage:
-                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-                },
-                {
-                  title: "Express Bookings",
-                  description:
-                    "Easily book for a flight, hotel or rides with us",
-                  ctaText: "Book Now",
-                  backgroundImage:
-                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-                  handleButtonPress: () => router.push("/(home)/book" as Href),
-                },
-                {
-                  title: "VISA Acquisition",
-                  description:
-                    "We simplify your VISA applications to all major destinations",
-                  ctaText: "Get Started",
-                  backgroundImage:
-                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-                },
-              ]}
-            />
-          </View>
-
-          {/* weekend getaways */}
-          <View className="py-8 pb-4">
-            <View className="flex-row justify-between mb-2 px-4 items-center">
-              <View className="w-2/3">
-                <ThemedText className="font-semibold text-xl">
-                  Weekend Getaways
-                </ThemedText>
-              </View>
-              <Pressable className="bg-yellow-500 flex justify-center items-center rounded-xl py-1 px-3 h-10">
-                <ThemedText className="font">View All</ThemedText>
-              </Pressable>
+          {/* Popular Hotels */}
+          <View className="mb-8">
+            <View className="flex-row justify-between items-center mb-4 px-4">
+              <ThemedText className="text-2xl font-semibold">
+                Popular Hotels
+              </ThemedText>
+              <TouchableOpacity
+                onPress={() => router.push("/book?category=hotels" as Href)}
+              >
+                <ThemedText className="text-yellow-500">See all</ThemedText>
+              </TouchableOpacity>
             </View>
 
-            <FlatList
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              style={{ paddingLeft: 8 }}
-              data={
-                packagesAPI.isLoading
-                  ? [{ _id: "1" }, { _id: "2" }, { _id: "3" }]
-                  : packagesAPI.data?.data
-              }
-              keyExtractor={(item) => item?._id}
-              renderItem={({ item }) =>
-                packagesAPI.isLoading ? (
-                  <DestinationCardSkeleton />
-                ) : (
+            {isLoadingHotels ? (
+              <View className="px-4">
+                <DestinationCardSkeleton />
+              </View>
+            ) : (
+              <FlatList
+                data={hotelsData?.data || []}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16 }}
+                renderItem={({ item }) => (
                   <Pressable
                     onPress={() =>
-                      router.push(`/package-details?id=${item._id}` as Href)
+                      router.push({
+                        pathname: "/details",
+                        params: { id: item._id },
+                      } as Href)
                     }
-                    className="bg-white dark:bg-slate-900 mr-4 rounded-xl overflow-hidden shadow-sm w-72"
+                    className="mb-6 p-2 py-3 pt-2 border-[1.5px] border-slate-300/30 dark:border-white/10 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden w-80 relative mr-4"
                   >
-                    <View className="h-40 bg-slate-200 dark:bg-slate-800">
-                      {item.images && item.images.length > 0 ? (
-                        <Image
-                          source={{ uri: item.images[0] }}
-                          className="w-full h-full"
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View className="w-full h-full items-center justify-center">
-                          <MaterialCommunityIcons
-                            name="image-off"
-                            size={48}
-                            color="#94a3b8"
-                          />
-                        </View>
-                      )}
+                    <View className="relative">
+                      <Image
+                        source={{ uri: item.images?.[0] }}
+                        className="w-full h-44 border border-slate-200 dark:border-slate-700 rounded-xl"
+                        resizeMode="cover"
+                      />
                       {/* Favorite Button */}
                       <Pressable
-                        onPress={() => handleFavoriteToggle(item._id)}
-                        className="absolute top-2 right-2 w-8 h-8 bg-white/80 dark:bg-slate-800/80 rounded-full items-center justify-center"
+                        onPress={(e) => handleFavoriteToggle(item._id, e)}
+                        className="absolute top-2 right-2 w-10 h-10 bg-white/80 dark:bg-slate-800/80 rounded-full items-center justify-center"
                       >
                         {favLoadingStates[item._id] ? (
                           <ActivityIndicator size="small" color="#eab308" />
@@ -351,60 +363,83 @@ export default function HomeScreen() {
                         )}
                       </Pressable>
                     </View>
-                    <View className="p-3">
+                    <View className="p-2">
                       <ThemedText className="text-lg font-semibold mb-1">
                         {item.name}
                       </ThemedText>
-                      <ThemedText
-                        className="text-slate-600 dark:text-slate-400 text-sm mb-2"
-                        numberOfLines={2}
-                      >
-                        {item.description}
-                      </ThemedText>
+                      <View className="flex-row items-center mb-2">
+                        <MaterialCommunityIcons
+                          name="map-marker"
+                          size={16}
+                          color="#eab308"
+                        />
+                        <ThemedText className="text-slate-600 dark:text-slate-400 text-sm ml-1">
+                          {item.location?.city}, {item.location?.country}
+                        </ThemedText>
+                      </View>
                       <View className="flex-row justify-between items-center">
                         <View className="flex-row items-center">
                           <MaterialCommunityIcons
-                            name="clock-outline"
-                            size={20}
+                            name="star"
+                            size={16}
                             color="#eab308"
                           />
                           <ThemedText className="ml-1 text-sm">
-                            {item.duration.days}D/{item.duration.nights}N
+                            {item.rating} ({item.number_of_reviews || 0})
                           </ThemedText>
                         </View>
                         <ThemedText className="font-bold text-yellow-500">
-                          ${item.price}
+                          ${item.price_per_night}/night
                         </ThemedText>
                       </View>
                     </View>
                   </Pressable>
-                )
-              }
-            />
+                )}
+                keyExtractor={(item) => item._id.toString()}
+              />
+            )}
+          </View>
 
-            {(packagesAPI.data?.data?.length === 0 || !packagesAPI.data) &&
-              !packagesAPI.isLoading && (
-                <View className="items-center mb-4">
-                  {colorScheme === "dark" ? (
-                    <Image
-                      source={require("@/assets/images/dark-no-globe.png")}
-                      className="w-1/2 h-36"
-                    />
-                  ) : (
-                    <Image
-                      source={require("@/assets/images/no-globe.png")}
-                      className="w-1/2 h-36"
-                    />
-                  )}
-                  <Text className="text-slate-600 dark:text-slate-400 font-light text-base">
-                    No packages found yet...
-                  </Text>
-                </View>
-              )}
+          {/* extra services */}
+          <View className="pt-4 px-4 mb-10">
+            <ThemedText className="font-semibold text-2xl mb-2">
+              Quick Find
+            </ThemedText>
+
+            <HeroCarousel
+              carouselData={[
+                {
+                  title: "Travel Documents",
+                  description:
+                    "Let's assist you to acquire any travel documents you may need",
+                  ctaText: "Apply Now",
+                  backgroundImage:
+                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+                  handleButtonPress: () => setShowTravelDocsForm(true),
+                },
+                {
+                  title: "Express Bookings",
+                  description:
+                    "Easily book for a flight, hotel or rides with us",
+                  ctaText: "Book Now",
+                  backgroundImage:
+                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+                  handleButtonPress: () => router.push("/book" as Href),
+                },
+                {
+                  title: "VISA Acquisition",
+                  description:
+                    "We simplify your VISA applications to all major destinations",
+                  ctaText: "Get Started",
+                  backgroundImage:
+                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+                },
+              ]}
+            />
           </View>
 
           <View className="px-4">
-            <ThemedText className="font-semibold text-xl mb-2">
+            <ThemedText className="font-semibold text-2xl mb-2">
               Why Choose Us
             </ThemedText>
             {benefits.map((item, index) => (
@@ -418,6 +453,16 @@ export default function HomeScreen() {
           </View>
         </ThemedView>
       </ParallaxScrollView>
+
+      {/* Travel Documents Form Bottom Sheet */}
+      <CustomBottomSheet
+        isOpen={showTravelDocsForm}
+        onClose={() => setShowTravelDocsForm(false)}
+        snapPoints={[0.9]}
+        initialSnap={0}
+      >
+        <TravelDocsForm onClose={() => setShowTravelDocsForm(false)} />
+      </CustomBottomSheet>
     </KeyboardAvoidingView>
   );
 }

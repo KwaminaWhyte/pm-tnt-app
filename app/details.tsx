@@ -1,6 +1,7 @@
 import { EntypoCheck } from "@/components/icons/entypo";
 import { ThemedText } from "@/components/ThemedText";
 import { CustomAlertModal } from "@/components/ui/modal";
+import { CustomBottomSheet } from "@/components/ui/bottom-sheet";
 import { HotelSection } from "@/components/ui/sections";
 import { StarRating } from "@/components/ui/star-rating";
 import { useAuth } from "@/context/AuthContext";
@@ -34,6 +35,7 @@ import moment from "moment";
 import { bookHotelRoom } from "@/data/api";
 import { Button } from "@/components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
+import { PaymentForm } from "@/components/ui/payment-form";
 
 export default function BookDetails() {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -51,6 +53,10 @@ export default function BookDetails() {
   const [checkOutDate, setCheckOutDate] = useState("");
   const [checkOutDatePickerVisible, setCheckOutDatePickerVisible] =
     useState(false);
+  const [showLoginAlert, setShowLoginAlert] = useState(false);
+  const [bookingData, setBookingData] = useState<any>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+
   const handleCheckIn = (date: any) => {
     console.log(date);
     setCheckInDatePickerVisible(false);
@@ -63,93 +69,49 @@ export default function BookDetails() {
     setCheckOutDate(date);
   };
 
-  const { showBottomSheet } = useBottomSheet();
-  const handleShowBottomSheet = () => {
-    showBottomSheet(
-      <View className="p-4">
-        <Text className="text-2xl font-bold mb-4">Book Your Stay</Text>
-        <View className="space-y-4">
-          <View className="">
-            <Text className="text-lg">Check-in</Text>
-            <View className="flex-row items-center space-x-5">
-              <View className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center">
-                <Text className="">
-                  {checkInDate
-                    ? moment(checkInDate).format("DD-MMM-YYYY hh:mm A")
-                    : "Select Date"}
-                </Text>
-              </View>
-              <Pressable
-                className="h-12 w-12 items-center justify-center rounded-xl bg-yellow-500"
-                onPress={() => setCheckInDatePickerVisible(true)}
-              >
-                <AntDesign name="calendar" size={24} color={"#fff"} />
-              </Pressable>
-            </View>
-          </View>
-          <View className="">
-            <Text className="text-lg">Check-out</Text>
-            <View className="flex-row items-center space-x-5">
-              <View className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center">
-                <Text className="">
-                  {checkOutDate
-                    ? moment(checkOutDate).format("DD-MMM-YYYY hh:mm A")
-                    : "Select Date"}
-                </Text>
-              </View>
-              <Pressable
-                className="h-12 w-12 items-center justify-center rounded-xl bg-yellow-500"
-                onPress={() => setCheckOutDatePickerVisible(true)}
-              >
-                <AntDesign name="calendar" size={24} color={"#fff"} />
-              </Pressable>
-            </View>
-          </View>
-          <View className="">
-            <Text className="text-lg">Guests</Text>
-            <View className="flex-row items-center space-x-5">
-              <TextInput
-                className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center"
-                placeholder="1"
-                keyboardType="numeric"
-              />
-              <View className="h-12 w-12" />
-            </View>
-          </View>
-          <Pressable
-            onPress={async () => {
-              setBookingIsLoading(true);
-              try {
-                const response = await bookHotelRoom(
-                  selectedRoomId,
-                  data?.data?.hotel?._id as string,
-                  checkInDate,
-                  checkOutDate,
-                  parseInt(guests),
-                  auth?.token as string
-                );
-                console.log(response);
-              } catch (error: any) {
-              } finally {
-                setBookingIsLoading(false);
-              }
-            }}
-            className="bg-yellow-500 h-12 items-center justify-center rounded-2xl mt-4"
-          >
-            {bookingIsLoading && (
-              <ActivityIndicator size="small" color="#fff" />
-            )}
-            <Text className="text-xl font-semibold text-white">
-              Confirm Booking
-            </Text>
-          </Pressable>
-        </View>
-      </View>,
-      {
-        snapPoints: [0.5, 0.6, 0.7, 0.8, 0.9],
-        initialSnap: 0,
-      }
-    );
+  const { showBottomSheet, hideBottomSheet } = useBottomSheet();
+
+  const handleBooking = async () => {
+    // Check if user is logged in
+    if (!auth?.token) {
+      hideBottomSheet();
+      setTimeout(() => {
+        setShowLoginAlert(true);
+      }, 300);
+      return;
+    }
+
+    if (!selectedRoomId || !checkInDate || !checkOutDate || !guests) {
+      toast.show("Please fill in all required fields", { type: "warning" });
+      return;
+    }
+
+    setBookingIsLoading(true);
+    try {
+      const response = await bookHotelRoom(
+        selectedRoomId,
+        data?.data?.hotel?._id as string,
+        checkInDate,
+        checkOutDate,
+        parseInt(guests),
+        auth?.token as string
+      );
+      console.log(response);
+
+      // Store booking data and show payment form
+      setBookingData(response.data);
+      setShowPaymentForm(true);
+      hideBottomSheet();
+    } catch (error: any) {
+      console.error("Booking error:", error?.response?.data || error);
+      toast.show(
+        error?.response?.data?.message ||
+          "Failed to book room. Please try again.",
+        { type: "error" }
+      );
+    } finally {
+      setBookingIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -237,6 +199,87 @@ export default function BookDetails() {
     } else {
       toast.show("No email address available", { type: "error" });
     }
+  };
+
+  const handleShowBottomSheet = () => {
+    if (!showBottomSheet) {
+      console.warn("Bottom sheet not initialized");
+      return;
+    }
+
+    showBottomSheet(
+      <View className="p-4">
+        <Text className="text-2xl font-bold mb-4">Book Your Stay</Text>
+        <View className="space-y-4">
+          <View className="">
+            <Text className="text-lg">Check-in</Text>
+            <View className="flex-row items-center space-x-5">
+              <View className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center">
+                <Text className="">
+                  {checkInDate
+                    ? moment(checkInDate).format("DD-MMM-YYYY hh:mm A")
+                    : "Select Date"}
+                </Text>
+              </View>
+              <Pressable
+                className="h-12 w-12 items-center justify-center rounded-xl bg-yellow-500"
+                onPress={() => setCheckInDatePickerVisible(true)}
+              >
+                <AntDesign name="calendar" size={24} color={"#fff"} />
+              </Pressable>
+            </View>
+          </View>
+          <View className="">
+            <Text className="text-lg">Check-out</Text>
+            <View className="flex-row items-center space-x-5">
+              <View className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center">
+                <Text className="">
+                  {checkOutDate
+                    ? moment(checkOutDate).format("DD-MMM-YYYY hh:mm A")
+                    : "Select Date"}
+                </Text>
+              </View>
+              <Pressable
+                className="h-12 w-12 items-center justify-center rounded-xl bg-yellow-500"
+                onPress={() => setCheckOutDatePickerVisible(true)}
+              >
+                <AntDesign name="calendar" size={24} color={"#fff"} />
+              </Pressable>
+            </View>
+          </View>
+          <View className="">
+            <Text className="text-lg">Guests</Text>
+            <View className="flex-row items-center space-x-5">
+              <TextInput
+                className="flex-1 border border-gray-200 dark:border-gray-700 p-2 rounded-xl h-12 justify-center"
+                placeholder="1"
+                keyboardType="numeric"
+                value={guests}
+                onChangeText={(text) => setGuests(text)}
+              />
+              <View className="h-12 w-12" />
+            </View>
+          </View>
+          <Pressable
+            onPress={handleBooking}
+            disabled={bookingIsLoading}
+            className="bg-yellow-500 h-12 items-center justify-center rounded-2xl mt-4"
+          >
+            {bookingIsLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text className="text-xl font-semibold text-white">
+                Confirm Booking
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      </View>,
+      {
+        snapPoints: [0.5],
+        initialSnap: 0,
+      }
+    );
   };
 
   return (
@@ -575,8 +618,55 @@ export default function BookDetails() {
         </ScrollView>
       )}
 
+      {/* Login Alert Modal */}
+      <View className="absolute inset-0 z-50">
+        <CustomAlertModal
+          open={showLoginAlert}
+          setOpen={setShowLoginAlert}
+          handleOk={() => {
+            setShowLoginAlert(false);
+            router.push("/login");
+          }}
+        >
+          <View>
+            <Text className="text-lg font-semibold mb-2 dark:text-white">
+              Login Required
+            </Text>
+            <Text className="text-gray-600 dark:text-gray-300">
+              You need to be logged in to book a room. Would you like to login
+              now?
+            </Text>
+          </View>
+        </CustomAlertModal>
+      </View>
+
+      {/* Payment Form Bottom Sheet */}
+      {bookingData && (
+        <View className="absolute inset-0 z-50">
+          <CustomBottomSheet
+            isOpen={showPaymentForm}
+            onClose={() => {
+              setShowPaymentForm(false);
+              setBookingData(null);
+            }}
+            snapPoints={[0.9]}
+            initialSnap={0}
+          >
+            <PaymentForm
+              onClose={() => {
+                setShowPaymentForm(false);
+                setBookingData(null);
+              }}
+              amount={data?.data?.hotel?.price}
+              hotelName={data?.data?.hotel?.name}
+              bookingData={bookingData}
+            />
+          </CustomBottomSheet>
+        </View>
+      )}
+
       {/* Bottom Actions */}
-      <View className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-white dark:bg-slate-800">
+      <View className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-white dark:bg-slate-800 z-40">
         <View className="flex-row items-center justify-between">
           <View className="flex-row space-x-3">
             <Pressable
@@ -615,8 +705,8 @@ export default function BookDetails() {
               {favIsLoading
                 ? "Updating..."
                 : isFavorite
-                ? "Remove from Favorites"
-                : "Add to Favorites"}
+                ? "Unfavorite"
+                : "Favorite"}
             </Text>
           </Pressable>
         </View>

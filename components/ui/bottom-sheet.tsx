@@ -1,5 +1,5 @@
-import React, { ReactNode, useCallback, useState } from "react";
-import { Dimensions, Pressable } from "react-native";
+import React, { ReactNode, useCallback, useState, forwardRef, useImperativeHandle } from "react";
+import { Dimensions, Pressable, ScrollView } from "react-native";
 import { AnimatePresence, MotiView } from "moti";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -16,23 +16,34 @@ const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;
 type BottomSheetProps = {
   isOpen: boolean;
   onClose: () => void;
-  children: ReactNode;
+  children?: ReactNode;
   snapPoints?: number[];
   initialSnap?: number;
 };
 
-export const CustomBottomSheet = ({
+type BottomSheetRef = {
+  translateY: any;
+  scrollEnabled: any;
+};
+
+export const CustomBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(({
   isOpen,
   onClose,
   children,
   snapPoints = [0.25, 0.5, 0.9],
   initialSnap = 0,
-}: BottomSheetProps) => {
+}, ref) => {
   const translateY = useSharedValue(0);
   const context = useSharedValue({ y: 0 });
-  const [isVisible, setIsVisible] = React.useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const scrollEnabled = useSharedValue(false);
 
-  const closeSheet = () => {
+  useImperativeHandle(ref, () => ({
+    translateY,
+    scrollEnabled,
+  }));
+
+  const closeSheet = useCallback(() => {
     translateY.value = withSpring(0, {
       damping: 35,
       stiffness: 300,
@@ -42,7 +53,7 @@ export const CustomBottomSheet = ({
       setIsVisible(false);
       onClose();
     }, 300);
-  };
+  }, [onClose]);
 
   const calculateSnapPoint = useCallback(
     (velocity: number) => {
@@ -81,6 +92,10 @@ export const CustomBottomSheet = ({
       context.value = { y: translateY.value };
     })
     .onUpdate((event) => {
+      // Only allow dragging if we're at the top of the scroll or dragging down
+      if (scrollEnabled.value && event.translationY < 0) {
+        return;
+      }
       translateY.value = Math.max(
         MAX_TRANSLATE_Y,
         Math.min(0, context.value.y + event.translationY)
@@ -102,16 +117,15 @@ export const CustomBottomSheet = ({
         stiffness: 300,
       });
     })
-    .activeOffsetY([-10, 10])
-    .runOnJS(true)
-    .enabled(true)
-    .shouldCancelWhenOutside(false);
+    .activeOffsetY([-10, 10]);
 
-  const composedGestures = Gesture.Exclusive(gesture);
+  const scrollGesture = Gesture.Native();
+  const composedGestures = Gesture.Simultaneous(scrollGesture, gesture);
 
   const rBottomSheetStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: translateY.value }],
+      zIndex: 50,
     };
   });
 
@@ -119,23 +133,24 @@ export const CustomBottomSheet = ({
     if (isOpen) {
       setIsVisible(true);
       translateY.value = withSpring(-snapPoints[initialSnap] * SCREEN_HEIGHT, {
-        damping: 50,
+        damping: 35,
         stiffness: 300,
+        mass: 0.5,
       });
+    } else {
+      closeSheet();
     }
-  }, [isOpen, initialSnap, snapPoints]);
+  }, [isOpen, snapPoints, initialSnap, closeSheet]);
 
   if (!isOpen && !isVisible) return null;
 
   return (
-    <AnimatePresence exitBeforeEnter>
+    <AnimatePresence>
       {(isOpen || isVisible) && (
         <MotiView
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{
-            opacity: 0,
-          }}
+          exit={{ opacity: 0 }}
           transition={{
             type: "timing",
             duration: 300,
@@ -155,17 +170,29 @@ export const CustomBottomSheet = ({
                   maxHeight: SCREEN_HEIGHT * 0.9,
                 },
               ]}
-              onStartShouldSetResponder={() => true}
-              onResponderTerminationRequest={() => false}
             >
               <View className="w-full items-center pt-4 pb-2">
                 <View className="w-16 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
               </View>
-              <View className="flex-1 px-4">{children}</View>
+              <ScrollView
+                className="flex-1 px-4"
+                onScrollBeginDrag={() => {
+                  scrollEnabled.value = true;
+                }}
+                onScrollEndDrag={() => {
+                  scrollEnabled.value = false;
+                }}
+                bounces={false}
+                showsVerticalScrollIndicator={true}
+              >
+                {children}
+              </ScrollView>
             </Animated.View>
           </GestureDetector>
         </MotiView>
       )}
     </AnimatePresence>
   );
-};
+});
+
+CustomBottomSheet.displayName = 'CustomBottomSheet';

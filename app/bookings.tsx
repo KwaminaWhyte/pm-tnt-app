@@ -26,6 +26,8 @@ import {
 } from "lucide-react-native";
 import { CustomBottomSheet } from "@/components/ui/bottom-sheet";
 import { useColorScheme } from "react-native";
+import { ThemedText } from "@/components/ThemedText";
+import { Href, router } from "expo-router";
 
 type BookingType = "hotel" | "vehicle" | "package";
 type BookingStatus = "Confirmed" | "Pending" | "Cancelled" | "";
@@ -85,93 +87,335 @@ export default function Bookings() {
     mutate();
   };
 
+  const renderNoDataState = () => {
+    const illustrations = {
+      hotel: require("@/assets/images/illustrations/hotel-booking.png"),
+      vehicle: require("@/assets/images/illustrations/journey.png"),
+      package: require("@/assets/images/no-globe.png"),
+    };
+
+    const messages = {
+      hotel: "No hotel bookings yet",
+      vehicle: "No vehicle bookings yet",
+      package: "No package bookings yet",
+    };
+
+    const descriptions = {
+      hotel: "Start exploring and book your perfect stay",
+      vehicle: "Book a vehicle for your next adventure",
+      package: "Discover amazing travel packages",
+    };
+
+    return (
+      <View className="flex-1 justify-center items-center px-4">
+        <Image
+          source={illustrations[selectedBookingType]}
+          className="w-64 h-48 mb-4"
+          resizeMode="contain"
+        />
+        <ThemedText className="text-xl font-semibold mb-2">
+          {messages[selectedBookingType]}
+        </ThemedText>
+        <ThemedText className="text-gray-500 dark:text-gray-400 text-center mb-6">
+          {descriptions[selectedBookingType]}
+        </ThemedText>
+        <Pressable
+          onPress={() => {
+            if (selectedBookingType === "hotel") {
+              router.push("/book?category=hotels" as Href);
+            } else if (selectedBookingType === "vehicle") {
+              router.push("/book?category=vehicles" as Href);
+            } else {
+              router.push("/book?category=packages" as Href);
+            }
+          }}
+          className="bg-yellow-500 py-3 px-6 rounded-xl"
+        >
+          <Text className="font-medium">Browse {selectedBookingType}s</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
   return (
-    <View className="flex-1 p-4 px-3">
-      <View className="flex-row items-center space-x-8 mb-4">
-        <View className="flex-1">
-          <CustomTabs
-            tabs={bookingTabs as any}
-            selectedTab={selectedBookingType}
-            onTabChange={(tab) => setSelectedBookingType(tab as BookingType)}
-          />
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      {/* Header */}
+      <View className="px-4 py-2">
+        <View className="flex-row items-center space-x-8">
+          <View className="flex-1">
+            <CustomTabs
+              tabs={bookingTabs as any}
+              selectedTab={selectedBookingType}
+              onTabChange={(tab) => setSelectedBookingType(tab as BookingType)}
+            />
+          </View>
+          <FilterButton onPress={() => setIsFilterModalVisible(true)} />
         </View>
-        <FilterButton onPress={() => setIsFilterModalVisible(true)} />
       </View>
 
-      {isLoading && <WishlistsSkeleton />}
+      {/* Loading State */}
+      {isLoading && (
+        <ScrollView className="flex-1 px-4">
+          <WishlistsSkeleton />
+        </ScrollView>
+      )}
+
+      {/* Error State */}
       {error && <ErrorScreen />}
 
-      {/* display list of hotel bookings */}
+      {/* Hotel Bookings List */}
       {data && selectedBookingType === "hotel" && (
-        <FlatList
-          data={data?.data?.bookings}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <Pressable
-              className="flex-row mb-2 bg-white dark:bg-slate-900 p-2 rounded-2xl"
-              onPress={() => {
-                setSelectedBooking(item);
-                setIsBottomSheetOpen(true);
-              }}
-            >
-              <Image
-                source={{ uri: item.hotelBooking.hotelId.images[0] }}
-                className="w-24 h-full rounded-xl"
-                resizeMode="cover"
-              />
-
-              <View className="flex-1 ml-3">
-                <View className="flex-row items-center justify-between mb-1">
-                  <Text className="font-semibold text-lg dark:text-white">
-                    {item.hotelBooking.hotelId.name}
-                  </Text>
-                  <View
-                    className={`px-2 py-1 rounded-full ${
-                      item.status === "Confirmed"
-                        ? "bg-green-100"
-                        : item.status === "Pending"
-                        ? "bg-yellow-100"
-                        : "bg-red-100"
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs ${
-                        item.status === "Confirmed"
-                          ? "text-green-800"
-                          : item.status === "Pending"
-                          ? "text-yellow-800"
-                          : "text-red-800"
-                      }`}
-                    >
-                      {item.status}
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="flex-row items-center mb-1">
-                  <Calendar
-                    size={14}
-                    color={colorScheme === "dark" ? "#fff" : "black"}
+        <>
+          {data?.data?.bookings?.length > 0 ? (
+            <FlatList
+              data={data?.data?.bookings}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+              className="flex-1"
+              renderItem={({ item }) => (
+                <Pressable
+                  className="flex-row mb-2 bg-white dark:bg-slate-900 p-2 rounded-2xl"
+                  onPress={() => {
+                    setSelectedBooking(item);
+                    setIsBottomSheetOpen(true);
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.hotelBooking.hotelId.images[0] }}
+                    className="w-24 h-full rounded-xl"
+                    resizeMode="cover"
                   />
-                  <Text className="ml-1 text-xs dark:text-white">
-                    {new Date(item.startDate).toLocaleDateString()} -{" "}
-                    {new Date(item.endDate).toLocaleDateString()}
-                  </Text>
-                </View>
 
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-xs text-gray-500">
-                    #{item.bookingReference}
-                  </Text>
-                  <Text className="font-semibold dark:text-white">
-                    ${item.pricing.totalPrice}
-                  </Text>
-                </View>
-              </View>
-            </Pressable>
+                  <View className="flex-1 ml-3">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="font-semibold text-lg dark:text-white">
+                        {item.hotelBooking.hotelId.name}
+                      </Text>
+                      <View
+                        className={`px-2 py-1 rounded-full ${
+                          item.status === "Confirmed"
+                            ? "bg-green-100"
+                            : item.status === "Pending"
+                            ? "bg-yellow-100"
+                            : "bg-red-100"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs ${
+                            item.status === "Confirmed"
+                              ? "text-green-800"
+                              : item.status === "Pending"
+                              ? "text-yellow-800"
+                              : "text-red-800"
+                          }`}
+                        >
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center mb-1">
+                      <Calendar
+                        size={14}
+                        color={colorScheme === "dark" ? "#fff" : "black"}
+                      />
+                      <Text className="ml-1 text-xs dark:text-white">
+                        {new Date(item.startDate).toLocaleDateString()} -{" "}
+                        {new Date(item.endDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-xs text-gray-500">
+                        #{item.bookingReference}
+                      </Text>
+                      <Text className="font-semibold text-base dark:text-white">
+                        $ {item.pricing.totalPrice.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+            />
+          ) : (
+            renderNoDataState()
           )}
-        />
+        </>
       )}
+
+      {/* Vehicle Bookings List */}
+      {data && selectedBookingType === "vehicle" && (
+        <>
+          {data?.data?.bookings?.length > 0 ? (
+            <FlatList
+              data={data?.data?.bookings}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+              className="flex-1"
+              renderItem={({ item }) => (
+                <Pressable
+                  className="flex-row mb-2 bg-white dark:bg-slate-900 p-2 rounded-2xl"
+                  onPress={() => {
+                    setSelectedBooking(item);
+                    setIsBottomSheetOpen(true);
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.vehicleBooking.vehicleId.images[0] }}
+                    className="w-24 h-full rounded-xl"
+                    resizeMode="cover"
+                  />
+
+                  <View className="flex-1 ml-3">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="font-semibold text-lg dark:text-white">
+                        {item.vehicleBooking.vehicleId.name}
+                      </Text>
+                      <View
+                        className={`px-2 py-1 rounded-full ${
+                          item.status === "Confirmed"
+                            ? "bg-green-100"
+                            : item.status === "Pending"
+                            ? "bg-yellow-100"
+                            : "bg-red-100"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs ${
+                            item.status === "Confirmed"
+                              ? "text-green-800"
+                              : item.status === "Pending"
+                              ? "text-yellow-800"
+                              : "text-red-800"
+                          }`}
+                        >
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center mb-1">
+                      <Calendar
+                        size={14}
+                        color={colorScheme === "dark" ? "#fff" : "black"}
+                      />
+                      <Text className="ml-1 text-xs dark:text-white">
+                        {new Date(item.startDate).toLocaleDateString()} -{" "}
+                        {new Date(item.endDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-xs text-gray-500">
+                        #{item.bookingReference}
+                      </Text>
+                      <Text className="font-semibold text-base dark:text-white">
+                        $ {item.pricing.totalPrice.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+            />
+          ) : (
+            renderNoDataState()
+          )}
+        </>
+      )}
+
+      {/* Package Bookings List */}
+      {data && selectedBookingType === "package" && (
+        <>
+          {data?.data?.bookings?.length > 0 ? (
+            <FlatList
+              data={data?.data?.bookings}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+              className="flex-1"
+              renderItem={({ item }) => (
+                <Pressable
+                  className="flex-row mb-2 bg-white dark:bg-slate-900 p-2 rounded-2xl"
+                  onPress={() => {
+                    setSelectedBooking(item);
+                    setIsBottomSheetOpen(true);
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.packageBooking.packageId.images[0] }}
+                    className="w-24 h-full rounded-xl"
+                    resizeMode="cover"
+                  />
+
+                  <View className="flex-1 ml-3">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="font-semibold text-lg dark:text-white">
+                        {item.packageBooking.packageId.name}
+                      </Text>
+                      <View
+                        className={`px-2 py-1 rounded-full ${
+                          item.status === "Confirmed"
+                            ? "bg-green-100"
+                            : item.status === "Pending"
+                            ? "bg-yellow-100"
+                            : "bg-red-100"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs ${
+                            item.status === "Confirmed"
+                              ? "text-green-800"
+                              : item.status === "Pending"
+                              ? "text-yellow-800"
+                              : "text-red-800"
+                          }`}
+                        >
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center mb-1">
+                      <Calendar
+                        size={14}
+                        color={colorScheme === "dark" ? "#fff" : "black"}
+                      />
+                      <Text className="ml-1 text-xs dark:text-white">
+                        {new Date(item.startDate).toLocaleDateString()} -{" "}
+                        {new Date(item.endDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-xs text-gray-500">
+                        #{item.bookingReference}
+                      </Text>
+                      <Text className="font-semibold text-base dark:text-white">
+                        $ {item.pricing.totalPrice.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+            />
+          ) : (
+            renderNoDataState()
+          )}
+        </>
+      )}
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={isFilterModalVisible}
+        onClose={() => setIsFilterModalVisible(false)}
+        bookingStatusOptions={bookingStatusOptions}
+        paymentStatusOptions={paymentStatusOptions}
+        selectedBookingStatus={selectedBookingStatus}
+        selectedPaymentStatus={selectedPaymentStatus}
+        onBookingStatusChange={setSelectedBookingStatus}
+        onPaymentStatusChange={setSelectedPaymentStatus}
+        onApplyFilters={handleApplyFilters}
+        onResetFilters={handleResetFilters}
+      />
 
       {/* Booking Details Bottom Sheet */}
       <CustomBottomSheet
@@ -374,23 +618,6 @@ export default function Bookings() {
           </ScrollView>
         )}
       </CustomBottomSheet>
-
-      <FilterModal
-        visible={isFilterModalVisible}
-        onClose={() => setIsFilterModalVisible(false)}
-        bookingStatusOptions={bookingStatusOptions}
-        paymentStatusOptions={paymentStatusOptions}
-        selectedBookingStatus={selectedBookingStatus}
-        selectedPaymentStatus={selectedPaymentStatus}
-        onBookingStatusChange={(status) =>
-          setSelectedBookingStatus(status as BookingStatus)
-        }
-        onPaymentStatusChange={(status) =>
-          setSelectedPaymentStatus(status as PaymentStatus)
-        }
-        onApplyFilters={handleApplyFilters}
-        onResetFilters={handleResetFilters}
-      />
     </View>
   );
 }

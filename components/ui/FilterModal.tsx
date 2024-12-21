@@ -7,15 +7,18 @@ interface FilterOption {
   value: string;
 }
 
+type BookingStatus = "Confirmed" | "Pending" | "Cancelled" | "";
+type PaymentStatus = "Pending" | "Paid" | "Unpaid" | "";
+
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
   bookingStatusOptions: FilterOption[];
   paymentStatusOptions: FilterOption[];
-  selectedBookingStatus: string;
-  selectedPaymentStatus: string;
-  onBookingStatusChange: (status: string) => void;
-  onPaymentStatusChange: (status: string) => void;
+  selectedBookingStatus: BookingStatus;
+  selectedPaymentStatus: PaymentStatus;
+  onBookingStatusChange: (status: BookingStatus) => void;
+  onPaymentStatusChange: (status: PaymentStatus) => void;
   onApplyFilters: () => void;
   onResetFilters: () => void;
 }
@@ -74,7 +77,7 @@ export function FilterModal({
                     {bookingStatusOptions.map((option) => (
                       <Pressable
                         key={option.value}
-                        onPress={() => onBookingStatusChange(option.value)}
+                        onPress={() => onBookingStatusChange(option.value as BookingStatus)}
                         className={`py-2.5 px-4 rounded-xl border ${
                           selectedBookingStatus === option.value
                             ? "bg-yellow-500/30 border-yellow-500"
@@ -103,7 +106,7 @@ export function FilterModal({
                     {paymentStatusOptions.map((option) => (
                       <Pressable
                         key={option.value}
-                        onPress={() => onPaymentStatusChange(option.value)}
+                        onPress={() => onPaymentStatusChange(option.value as PaymentStatus)}
                         className={`py-2.5 px-4 rounded-xl border ${
                           selectedPaymentStatus === option.value
                             ? "bg-yellow-500/30 border-yellow-500"
