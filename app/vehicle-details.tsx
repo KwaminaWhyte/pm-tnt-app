@@ -31,7 +31,7 @@ export default function VehicleDetails() {
   const [selectedImage, setSelectedImage] = useState("");
 
   const vehicleData = JSON.parse(vehicle as string);
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.PM_TNT_API_BASE_URL;
 
   useEffect(() => {
     if (vehicleData.images?.[0]) {

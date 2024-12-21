@@ -23,7 +23,7 @@ import { useToast } from "react-native-toast-notifications";
 
 export default function LoginScreen() {
   const toast = useToast();
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.PM_TNT_API_BASE_URL;
   const { login, auth } = useAuth();
 
   const validate = (values: any) => {

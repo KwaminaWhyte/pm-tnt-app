@@ -55,7 +55,7 @@ const paymentStatusOptions = [
 
 export default function Bookings() {
   const { auth } = useAuth();
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.PM_TNT_API_BASE_URL;
 
   const [selectedBookingType, setSelectedBookingType] =
     useState<BookingType>("hotel");

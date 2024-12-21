@@ -33,7 +33,7 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const { top } = useSafeAreaInsets();
   const { auth } = useAuth();
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.PM_TNT_API_BASE_URL;
   const [showTravelDocsForm, setShowTravelDocsForm] = useState(false);
   const [favLoadingStates, setFavLoadingStates] = useState<{
     [key: string]: boolean;
