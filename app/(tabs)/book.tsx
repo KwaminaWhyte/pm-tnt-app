@@ -60,7 +60,7 @@ export default function BookingScreen() {
   }, []);
 
   // Fetch available options based on selected type
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.PM_TNT_API_BASE_URL;
   const { data, isLoading } = useSWR(
     category === "packages"
       ? `${baseUrl}/packages?searchTerm=${searchTerm || ""}`

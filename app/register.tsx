@@ -25,7 +25,7 @@ import { useToast } from "react-native-toast-notifications";
 
 export default function RegistrationScreen() {
   const toast = useToast();
-  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.PM_TNT_API_BASE_URL;
   const [isLoading, setIsLoading] = useState(false);
   const [values, setValues] = useState({
     firstName: "",
