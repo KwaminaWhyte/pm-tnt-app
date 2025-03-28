@@ -2,6 +2,7 @@ import { ErrorScreen } from "@/components/screens/error";
 import { WishlistsSkeleton } from "@/components/skeletons/wishlists";
 import { useAuth } from "@/context/AuthContext";
 import { fetcher } from "@/data/fetcher";
+import { BASE_URL, getMyBookings } from "@/data/api";
 import { useState } from "react";
 import {
   View,
@@ -55,8 +56,6 @@ const paymentStatusOptions = [
 
 export default function Bookings() {
   const { auth } = useAuth();
-  const baseUrl =
-    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
 
   const [selectedBookingType, setSelectedBookingType] =
     useState<BookingType>("hotel");
@@ -70,7 +69,7 @@ export default function Bookings() {
   const colorScheme = useColorScheme();
 
   const { data, error, isLoading, mutate } = useSWR(
-    `${baseUrl}/bookings/my-bookings?bookingType=${selectedBookingType}&status=${selectedBookingStatus}&paymentStatus=${selectedPaymentStatus}`,
+    `/bookings/my-bookings?bookingType=${selectedBookingType}&status=${selectedBookingStatus}&paymentStatus=${selectedPaymentStatus}`,
     fetcher(auth?.token)
   );
 
@@ -190,27 +189,6 @@ export default function Bookings() {
                       <Text className="font-semibold text-base dark:text-white">
                         {item.hotelBooking.hotelId.name}
                       </Text>
-                      {/* <View
-                        className={`px-2 py-1 rounded-full ${
-                          item.status === "Confirmed"
-                            ? "bg-green-100"
-                            : item.status === "Pending"
-                            ? "bg-yellow-100"
-                            : "bg-red-100"
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs ${
-                            item.status === "Confirmed"
-                              ? "text-green-800"
-                              : item.status === "Pending"
-                              ? "text-yellow-800"
-                              : "text-red-800"
-                          }`}
-                        >
-                          {item.status}
-                        </Text>
-                      </View> */}
                     </View>
 
                     <View className="flex-row items-center mb-1">
@@ -427,13 +405,6 @@ export default function Bookings() {
       >
         {selectedBooking && (
           <ScrollView className="flex-1 px-4">
-            {/* Header Image */}
-            {/* <Image
-              source={{ uri: selectedBooking.hotelBooking.hotelId.images[0] }}
-              className="w-full h-48 rounded-xl mb-4"
-              resizeMode="cover"
-            /> */}
-
             {/* Hotel Name and Status */}
             <View className="flex-row items-start justify-between mb-4">
               <View className="flex-1">

@@ -28,13 +28,17 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { CustomBottomSheet } from "@/components/ui/bottom-sheet";
 import { TravelDocsForm } from "@/components/ui/travel-docs-form";
+import {
+  BASE_URL,
+  createApiInstance,
+  toggleFavorite,
+  checkFavorite,
+} from "@/data/api";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const { top } = useSafeAreaInsets();
   const { auth } = useAuth();
-  const baseUrl =
-    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
   const [showTravelDocsForm, setShowTravelDocsForm] = useState(false);
   const [favLoadingStates, setFavLoadingStates] = useState<{
     [key: string]: boolean;
@@ -43,13 +47,19 @@ export default function HomeScreen() {
 
   // Fetch hotels from API
   const { data: hotelsData, isLoading: isLoadingHotels } = useSWR(
-    `${baseUrl}/hotels/public?limit=4`,
+    `/hotels/public?limit=4`,
     fetcher()
   );
 
   // Fetch packages from API
   const { data: packagesData, isLoading: isLoadingPackages } = useSWR(
-    `${baseUrl}/packages`,
+    `/packages`,
+    fetcher()
+  );
+
+  // Fetch sliders from API
+  const { data: slidersData, isLoading: isLoadingSliders } = useSWR(
+    `/sliders`,
     fetcher()
   );
 
@@ -65,9 +75,7 @@ export default function HomeScreen() {
     try {
       if (!auth?.token) return;
       const promises = itemIds.map((id) =>
-        axios.get(`${baseUrl}/favorites/check/hotel/${id}`, {
-          headers: { Authorization: `Bearer ${auth?.token}` },
-        })
+        checkFavorite(id, "hotel", auth?.token)
       );
       const responses = await Promise.all(promises);
       const newFavorites = responses.reduce((acc, response, index) => {
@@ -91,11 +99,7 @@ export default function HomeScreen() {
     }
     setFavLoadingStates((prev) => ({ ...prev, [itemId]: true }));
     try {
-      await axios.post(
-        `${baseUrl}/favorites/hotel/${itemId}`,
-        {},
-        { headers: { Authorization: `Bearer ${auth?.token}` } }
-      );
+      await toggleFavorite(itemId, "hotel", auth?.token);
       setFavorites((prev) => {
         const newState = { ...prev, [itemId]: !prev[itemId] };
         return newState;
@@ -112,9 +116,7 @@ export default function HomeScreen() {
     try {
       if (!auth?.token) return;
       const promises = packageIds.map((id) =>
-        axios.get(`${baseUrl}/favorites/check/package/${id}`, {
-          headers: { Authorization: `Bearer ${auth?.token}` },
-        })
+        checkFavorite(id, "package", auth?.token)
       );
       const responses = await Promise.all(promises);
       const newFavorites = responses.reduce((acc, response, index) => {
@@ -135,11 +137,7 @@ export default function HomeScreen() {
     }
     setFavLoadingStates((prev) => ({ ...prev, [packageId]: true }));
     try {
-      await axios.post(
-        `${baseUrl}/favorites/package/${packageId}`,
-        {},
-        { headers: { Authorization: `Bearer ${auth?.token}` } }
-      );
+      await toggleFavorite(packageId, "package", auth?.token);
       setFavorites((prev) => ({ ...prev, [packageId]: !prev[packageId] }));
     } catch (error) {
       console.error(error);
@@ -154,6 +152,54 @@ export default function HomeScreen() {
       checkFavorites(packageIds);
     }
   }, [packagesData, auth?.token]);
+
+  // Process slider data for the carousel
+  const carouselData =
+    slidersData?.data?.map((slider: any) => ({
+      title: slider.title,
+      description: slider.description,
+      ctaText: slider.ctaText,
+      backgroundImage: slider.imageUrl,
+      handleButtonPress: () => {
+        // Handle different CTA links
+        if (slider.ctaLink === "travel-docs") {
+          setShowTravelDocsForm(true);
+        } else if (slider.ctaLink === "bookings") {
+          router.push("/book" as Href);
+        } else if (slider.ctaLink.startsWith("/")) {
+          router.push(slider.ctaLink as Href);
+        }
+      },
+    })) || [];
+
+  // Default carousel items to use when API data isn't available yet
+  const defaultCarouselItems = [
+    {
+      title: "Travel Documents",
+      description:
+        "Let's assist you to acquire any travel documents you may need",
+      ctaText: "Apply Now",
+      backgroundImage:
+        "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+      handleButtonPress: () => setShowTravelDocsForm(true),
+    },
+    {
+      title: "Express Bookings",
+      description: "Easily book for a flight, hotel or rides with us",
+      ctaText: "Book Now",
+      backgroundImage:
+        "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+      handleButtonPress: () => router.push("/book" as Href),
+    },
+    {
+      title: "VISA Acquisition",
+      description:
+        "We simplify your VISA applications to all major destinations",
+      ctaText: "Get Started",
+      backgroundImage:
+        "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+    },
+  ];
 
   return (
     <KeyboardAvoidingView
@@ -197,7 +243,7 @@ export default function HomeScreen() {
           <View className="py-8 pb-4 ">
             <View className="flex-row px-4 justify-between items-center mb-2">
               <ThemedText className="font-semibold text-2xl">
-                Just In
+                Featured Destinations
               </ThemedText>
             </View>
 
@@ -286,7 +332,7 @@ export default function HomeScreen() {
               }
             />
 
-            {(packagesData?.data?.length === 0 || !packagesData) &&
+            {/* {(packagesData?.data?.length === 0 || !packagesData) &&
               !isLoadingPackages && (
                 <View className="items-center mb-4">
                   {colorScheme === "dark" ? (
@@ -304,7 +350,7 @@ export default function HomeScreen() {
                     No destinations found yet...
                   </Text>
                 </View>
-              )}
+              )} */}
           </View>
 
           {/* Popular Hotels */}
@@ -401,42 +447,21 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* extra services */}
+          {/* Promotional slider */}
           <View className="pt-4 px-4 mb-10">
             <ThemedText className="font-semibold text-2xl mb-2">
               Quick Find
             </ThemedText>
 
-            <HeroCarousel
-              carouselData={[
-                {
-                  title: "Travel Documents",
-                  description:
-                    "Let's assist you to acquire any travel documents you may need",
-                  ctaText: "Apply Now",
-                  backgroundImage:
-                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-                  handleButtonPress: () => setShowTravelDocsForm(true),
-                },
-                {
-                  title: "Express Bookings",
-                  description:
-                    "Easily book for a flight, hotel or rides with us",
-                  ctaText: "Book Now",
-                  backgroundImage:
-                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-                  handleButtonPress: () => router.push("/book" as Href),
-                },
-                {
-                  title: "VISA Acquisition",
-                  description:
-                    "We simplify your VISA applications to all major destinations",
-                  ctaText: "Get Started",
-                  backgroundImage:
-                    "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-                },
-              ]}
-            />
+            {isLoadingSliders ? (
+              <View className="h-40 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+            ) : (
+              <HeroCarousel
+                carouselData={
+                  carouselData.length > 0 ? carouselData : defaultCarouselItems
+                }
+              />
+            )}
           </View>
 
           <View className="px-4">

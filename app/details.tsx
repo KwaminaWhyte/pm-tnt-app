@@ -8,6 +8,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useBottomSheet } from "@/context/BottomSheetContext";
 import { fetcher } from "@/data/fetcher";
 import {
+  BASE_URL,
+  bookHotelRoom,
+  checkFavorite,
+  toggleFavorite,
+} from "@/data/api";
+import {
   AntDesign,
   FontAwesome6,
   MaterialCommunityIcons,
@@ -32,14 +38,11 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Input } from "@/components/ui/input";
 import { TextInput } from "react-native-gesture-handler";
 import moment from "moment";
-import { bookHotelRoom } from "@/data/api";
 import { Button } from "@/components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
 import { PaymentForm } from "@/components/ui/payment-form";
 
 export default function BookDetails() {
-  const baseUrl =
-    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
   const { id } = useGlobalSearchParams();
   const { auth } = useAuth();
 
@@ -121,10 +124,7 @@ export default function BookDetails() {
     }
   }, [checkInDate, checkOutDate]);
 
-  const { isLoading, data, error } = useSWR(
-    `${baseUrl}/hotels/public/${id}`,
-    fetcher()
-  );
+  const { isLoading, data, error } = useSWR(`/hotels/public/${id}`, fetcher());
 
   // if (data) console.log(JSON.stringify(data, null, 2));
 
@@ -143,12 +143,12 @@ export default function BookDetails() {
   // check if added to favourites
   const checkIfAddedToFavorite = async () => {
     try {
-      if (!auth?.token) return;
-      const response = await axios.get(
-        `${baseUrl}/favorites/check/hotel/${data?.data?.hotel?._id}`,
-        {
-          headers: { Authorization: `Bearer ${auth?.token}` },
-        }
+      if (!auth?.token || !data?.data?.hotel?._id) return;
+
+      const response = await checkFavorite(
+        data.data.hotel._id,
+        "hotel",
+        auth.token
       );
       setIsFavorite(response.data?.isFavorite);
     } catch (error) {
@@ -160,7 +160,7 @@ export default function BookDetails() {
     if (data) {
       checkIfAddedToFavorite();
     }
-  }, []);
+  }, [data, auth?.token]);
 
   const handleAddToFavorite = async () => {
     setFavIsLoading(true);
@@ -169,11 +169,8 @@ export default function BookDetails() {
         alert("Please login to add to favourites!");
         return;
       }
-      await axios.post(
-        `${baseUrl}/favorites/hotel/${data?.data?.hotel?._id}`,
-        {},
-        { headers: { Authorization: `Bearer ${auth?.token}` } }
-      );
+
+      await toggleFavorite(data?.data?.hotel?._id, "hotel", auth?.token);
       setIsFavorite(!isFavorite);
       toast.show(isFavorite ? "Removed from favorites" : "Added to favorites", {
         type: "success",
