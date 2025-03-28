@@ -62,13 +62,11 @@ export default function BookDetails() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const handleCheckIn = (date: any) => {
-    console.log(date);
     setCheckInDatePickerVisible(false);
     setCheckInDate(date);
   };
 
   const handleCheckOut = (date: any) => {
-    console.log(date);
     setCheckOutDatePickerVisible(false);
     setCheckOutDate(date);
   };
@@ -100,7 +98,6 @@ export default function BookDetails() {
         parseInt(guests),
         auth?.token as string
       );
-      console.log(response);
 
       // Store booking data and show payment form
       setBookingData(response.data);
@@ -125,8 +122,6 @@ export default function BookDetails() {
   }, [checkInDate, checkOutDate]);
 
   const { isLoading, data, error } = useSWR(`/hotels/public/${id}`, fetcher());
-
-  // if (data) console.log(JSON.stringify(data, null, 2));
 
   const [selectedImage, setSelectedImage] = useState(
     data?.data?.hotel?.images[0] || undefined

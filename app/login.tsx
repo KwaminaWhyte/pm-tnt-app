@@ -54,8 +54,6 @@ export default function LoginScreen() {
   // Handle form submission
   const [isLoading, setIsLoading] = useState(false);
   const submitForm = async () => {
-    console.log({ auth, values });
-
     setIsLoading(true);
     try {
       // check for validation errors
@@ -81,8 +79,6 @@ export default function LoginScreen() {
       resetForm();
       router.push("/profile" as Href);
     } catch (error: any) {
-      console.log(JSON.stringify(error.response, null, 2));
-
       toast.show(
         error.response.data?.errors[0]?.message ||
           "Something went wrong! " + error.message,

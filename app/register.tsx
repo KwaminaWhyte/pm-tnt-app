@@ -116,8 +116,6 @@ export default function RegistrationScreen() {
         phone: values.phone,
         password: values.password,
       });
-
-      console.log(response.data);
     } catch (error: any) {
       toast.show("Failed to register! " + error?.response?.data?.message, {
         type: "danger",

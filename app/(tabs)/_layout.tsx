@@ -13,6 +13,7 @@ import {
   SettingsBroken,
   SettingsFilled,
 } from "@/components/icons/tabs";
+import { Plane, PlaneTakeoff } from "lucide-react-native";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -58,6 +59,21 @@ export default function TabLayout() {
                 <CardFilled color={color} />
               ) : (
                 <CardBroken color={color} />
+              )}
+            </>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="trip"
+        options={{
+          title: "Trip",
+          tabBarIcon: ({ color, focused }) => (
+            <>
+              {focused ? (
+                <Plane color={color} />
+              ) : (
+                <PlaneTakeoff color={color} />
               )}
             </>
           ),

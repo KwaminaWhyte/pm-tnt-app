@@ -33,6 +33,8 @@ import {
   createApiInstance,
   toggleFavorite,
   checkFavorite,
+  openWhatsAppChat,
+  getPackages,
 } from "@/data/api";
 
 export default function HomeScreen() {
@@ -44,12 +46,6 @@ export default function HomeScreen() {
     [key: string]: boolean;
   }>({});
   const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
-
-  // Fetch hotels from API
-  const { data: hotelsData, isLoading: isLoadingHotels } = useSWR(
-    `/hotels/public?limit=4`,
-    fetcher()
-  );
 
   // Fetch packages from API
   const { data: packagesData, isLoading: isLoadingPackages } = useSWR(
@@ -64,52 +60,11 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
-    if (hotelsData?.data) {
-      const itemIds = hotelsData.data.map((item: any) => item._id);
-      checkHotelFavorites(itemIds);
+    if (packagesData?.data) {
+      const packageIds = packagesData.data.map((item: any) => item._id);
+      checkFavorites(packageIds);
     }
-  }, [hotelsData, auth?.token]);
-
-  // check if hotels are in favorites
-  const checkHotelFavorites = async (itemIds: string[]) => {
-    try {
-      if (!auth?.token) return;
-      const promises = itemIds.map((id) =>
-        checkFavorite(id, "hotel", auth?.token)
-      );
-      const responses = await Promise.all(promises);
-      const newFavorites = responses.reduce((acc, response, index) => {
-        acc[itemIds[index]] = response.data?.isFavorite || false;
-        return acc;
-      }, {} as { [key: string]: boolean });
-      setFavorites(newFavorites);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // handle favorite toggle for hotels
-  const handleFavoriteToggle = async (itemId: string, e?: any) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    if (!auth?.token) {
-      alert("Please login to add to favourites!");
-      return;
-    }
-    setFavLoadingStates((prev) => ({ ...prev, [itemId]: true }));
-    try {
-      await toggleFavorite(itemId, "hotel", auth?.token);
-      setFavorites((prev) => {
-        const newState = { ...prev, [itemId]: !prev[itemId] };
-        return newState;
-      });
-    } catch (error) {
-      console.error(JSON.stringify(error, null, 2));
-    } finally {
-      setFavLoadingStates((prev) => ({ ...prev, [itemId]: false }));
-    }
-  };
+  }, [packagesData, auth?.token]);
 
   // check if packages are in favorites
   const checkFavorites = async (packageIds: string[]) => {
@@ -146,13 +101,6 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    if (packagesData?.data) {
-      const packageIds = packagesData.data.map((item: any) => item._id);
-      checkFavorites(packageIds);
-    }
-  }, [packagesData, auth?.token]);
-
   // Process slider data for the carousel
   const carouselData =
     slidersData?.data?.map((slider: any) => ({
@@ -175,29 +123,92 @@ export default function HomeScreen() {
   // Default carousel items to use when API data isn't available yet
   const defaultCarouselItems = [
     {
-      title: "Travel Documents",
-      description:
-        "Let's assist you to acquire any travel documents you may need",
-      ctaText: "Apply Now",
+      title: "New Destinations",
+      description: "Discover amazing new locations added to our collection",
+      ctaText: "Explore Now",
       backgroundImage:
-        "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
-      handleButtonPress: () => setShowTravelDocsForm(true),
+        "https://images.unsplash.com/photo-1505778276668-26b3ff7af103?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1286&q=80",
+      handleButtonPress: () => router.push("/book?category=packages" as Href),
     },
     {
-      title: "Express Bookings",
-      description: "Easily book for a flight, hotel or rides with us",
+      title: "Summer Sale",
+      description: "Enjoy 30% off on selected destinations this summer",
       ctaText: "Book Now",
       backgroundImage:
-        "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1473&q=80",
       handleButtonPress: () => router.push("/book" as Href),
     },
     {
-      title: "VISA Acquisition",
-      description:
-        "We simplify your VISA applications to all major destinations",
-      ctaText: "Get Started",
+      title: "Premium Packages",
+      description: "Experience luxury with our premium travel packages",
+      ctaText: "View Packages",
       backgroundImage:
-        "https://img.freepik.com/free-photo/woman-credit-shopping-smartphone-manager_1262-2761.jpg",
+        "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      handleButtonPress: () => router.push("/book?category=packages" as Href),
+    },
+  ];
+
+  // Trip essentials data
+  const tripEssentials = [
+    {
+      title: "Travel Documents",
+      description: "We help with passports, visas and other travel documents",
+      ctaText: "Chat Now",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1544177889-75fc080ce58b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1287&q=80",
+      handleButtonPress: () =>
+        openWhatsAppChat(
+          "+233245678901",
+          "Hello, I need assistance with travel documents."
+        ),
+    },
+    {
+      title: "Visa Application",
+      description: "Expert assistance with visa applications for any country",
+      ctaText: "Get Help",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1587047237441-78e3787153d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1289&q=80",
+      handleButtonPress: () =>
+        openWhatsAppChat(
+          "+233245678901",
+          "Hello, I need help with visa application."
+        ),
+    },
+    {
+      title: "Airport Transport",
+      description: "Reliable transportation from and to the airport",
+      ctaText: "Book Now",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1560624657-a818340054e8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      handleButtonPress: () =>
+        openWhatsAppChat(
+          "+233245678901",
+          "Hello, I would like to book airport transportation."
+        ),
+    },
+    {
+      title: "Tour Planning",
+      description: "Customized tour planning tailored to your preferences",
+      ctaText: "Plan Now",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1421&q=80",
+      handleButtonPress: () =>
+        openWhatsAppChat(
+          "+233245678901",
+          "Hello, I need help planning a tour."
+        ),
+    },
+    {
+      title: "Accommodation",
+      description: "Find the perfect place to stay during your travels",
+      ctaText: "Find Places",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      handleButtonPress: () =>
+        openWhatsAppChat(
+          "+233245678901",
+          "Hello, I need help finding accommodation."
+        ),
     },
   ];
 
@@ -226,7 +237,10 @@ export default function HomeScreen() {
             </View>
 
             <View className="mt-5 px-4">
-              <ThemedText className="text-4xl font-bold text-slate-800 dark:text-white">
+              <ThemedText
+                type="title"
+                className="font-bold text-slate-800 dark:text-white"
+              >
                 Hello, Peter
               </ThemedText>
               <ThemedText className="font-light text-base">
@@ -239,12 +253,32 @@ export default function HomeScreen() {
         }
       >
         <ThemedView className="flex-1 bg-white dark:bg-slate-950">
-          {/* featured destinations */}
-          <View className="py-8 pb-4 ">
-            <View className="flex-row px-4 justify-between items-center mb-2">
-              <ThemedText className="font-semibold text-2xl">
-                Featured Destinations
+          {/* JUST IN Section - Promotional sliders */}
+          <View className="pt-6 px-4 mb-8">
+            <ThemedText className="font-semibold text-2xl">JUST IN</ThemedText>
+
+            {isLoadingSliders ? (
+              <View className="h-40 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+            ) : (
+              <HeroCarousel
+                carouselData={
+                  carouselData.length > 0 ? carouselData : defaultCarouselItems
+                }
+              />
+            )}
+          </View>
+
+          {/* LETS TRIP Section - Tour packages */}
+          <View className="mb-8">
+            <View className="flex-row justify-between items-center px-4">
+              <ThemedText className="text-2xl font-semibold">
+                LETS TRIP
               </ThemedText>
+              <TouchableOpacity
+                onPress={() => router.push("/book?category=packages" as Href)}
+              >
+                <ThemedText className="text-yellow-500">See all</ThemedText>
+              </TouchableOpacity>
             </View>
 
             <FlatList
@@ -332,9 +366,9 @@ export default function HomeScreen() {
               }
             />
 
-            {/* {(packagesData?.data?.length === 0 || !packagesData) &&
+            {(packagesData?.data?.length === 0 || !packagesData) &&
               !isLoadingPackages && (
-                <View className="items-center mb-4">
+                <View className="items-center mb-4 px-4">
                   {colorScheme === "dark" ? (
                     <Image
                       source={require("@/assets/images/dark-no-globe.png")}
@@ -347,124 +381,22 @@ export default function HomeScreen() {
                     />
                   )}
                   <Text className="text-slate-600 dark:text-slate-400 font-light text-base">
-                    No destinations found yet...
+                    No tour packages found yet...
                   </Text>
                 </View>
-              )} */}
+              )}
           </View>
 
-          {/* Popular Hotels */}
-          <View className="mb-8">
-            <View className="flex-row justify-between items-center mb-4 px-4">
-              <ThemedText className="text-2xl font-semibold">
-                Popular Hotels
-              </ThemedText>
-              <TouchableOpacity
-                onPress={() => router.push("/book?category=hotels" as Href)}
-              >
-                <ThemedText className="text-yellow-500">See all</ThemedText>
-              </TouchableOpacity>
-            </View>
-
-            {isLoadingHotels ? (
-              <View className="px-4">
-                <DestinationCardSkeleton />
-              </View>
-            ) : (
-              <FlatList
-                data={hotelsData?.data || []}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16 }}
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() =>
-                      router.push({
-                        pathname: "/details",
-                        params: { id: item._id },
-                      } as Href)
-                    }
-                    className="mb-6 p-2 py-3 pt-2 border-[1.5px] border-slate-300/30 dark:border-white/10 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden w-80 relative mr-4"
-                  >
-                    <View className="relative">
-                      <Image
-                        source={{ uri: item.images?.[0] }}
-                        className="w-full h-44 border border-slate-200 dark:border-slate-700 rounded-xl"
-                        resizeMode="cover"
-                      />
-                      {/* Favorite Button */}
-                      <Pressable
-                        onPress={(e) => handleFavoriteToggle(item._id, e)}
-                        className="absolute top-2 right-2 w-10 h-10 bg-white/80 dark:bg-slate-800/80 rounded-full items-center justify-center"
-                      >
-                        {favLoadingStates[item._id] ? (
-                          <ActivityIndicator size="small" color="#eab308" />
-                        ) : (
-                          <MaterialCommunityIcons
-                            name={
-                              favorites[item._id] ? "heart" : "heart-outline"
-                            }
-                            size={20}
-                            color={favorites[item._id] ? "#ef4444" : "#64748b"}
-                          />
-                        )}
-                      </Pressable>
-                    </View>
-                    <View className="p-2">
-                      <ThemedText className="text-lg font-semibold mb-1">
-                        {item.name}
-                      </ThemedText>
-                      <View className="flex-row items-center mb-2">
-                        <MaterialCommunityIcons
-                          name="map-marker"
-                          size={16}
-                          color="#eab308"
-                        />
-                        <ThemedText className="text-slate-600 dark:text-slate-400 text-sm ml-1">
-                          {item.location?.city}, {item.location?.country}
-                        </ThemedText>
-                      </View>
-                      <View className="flex-row justify-between items-center">
-                        <View className="flex-row items-center">
-                          <MaterialCommunityIcons
-                            name="star"
-                            size={16}
-                            color="#eab308"
-                          />
-                          <ThemedText className="ml-1 text-sm">
-                            {item.rating} ({item.number_of_reviews || 0})
-                          </ThemedText>
-                        </View>
-                        <ThemedText className="font-bold text-yellow-500">
-                          ${item.price_per_night}/night
-                        </ThemedText>
-                      </View>
-                    </View>
-                  </Pressable>
-                )}
-                keyExtractor={(item) => item._id.toString()}
-              />
-            )}
-          </View>
-
-          {/* Promotional slider */}
+          {/* TRIP ESSENTIALS Section - Services with WhatsApp */}
           <View className="pt-4 px-4 mb-10">
-            <ThemedText className="font-semibold text-2xl mb-2">
-              Quick Find
+            <ThemedText className="font-semibold text-2xl">
+              TRIP ESSENTIALS
             </ThemedText>
 
-            {isLoadingSliders ? (
-              <View className="h-40 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
-            ) : (
-              <HeroCarousel
-                carouselData={
-                  carouselData.length > 0 ? carouselData : defaultCarouselItems
-                }
-              />
-            )}
+            <HeroCarousel carouselData={tripEssentials} />
           </View>
 
-          <View className="px-4">
+          <View className="px-4 mb-8">
             <ThemedText className="font-semibold text-2xl mb-2">
               Why Choose Us
             </ThemedText>

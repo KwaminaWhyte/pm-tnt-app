@@ -56,7 +56,6 @@ export default function BookingScreen() {
     if (!category) {
       router.navigate(`/book?category=hotels` as Href);
     }
-    console.log(category);
   }, []);
 
   // Fetch available options based on selected type
@@ -70,12 +69,6 @@ export default function BookingScreen() {
       : `${baseUrl}/hotels/public?searchTerm=${searchTerm || ""}`,
     fetcher()
   );
-
-  useEffect(() => {
-    if (data) {
-      console.log(JSON.stringify(data, null, 2));
-    }
-  }, [data]);
 
   useEffect(() => {
     if (data?.data) {

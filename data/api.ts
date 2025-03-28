@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Linking } from "react-native";
 
 export const BASE_URL =
   "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
@@ -86,6 +87,26 @@ export const getMyBookings = async (
   return api.get(
     `/bookings/my-bookings?bookingType=${bookingType}&status=${status}&paymentStatus=${paymentStatus}`
   );
+};
+
+// WhatsApp Chat
+export const openWhatsAppChat = async (
+  phoneNumber: string = "+233245678901", // Default company number
+  message: string = "Hello, I'm interested in your services."
+) => {
+  const url = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(
+    message
+  )}`;
+  const canOpen = await Linking.canOpenURL(url);
+
+  if (canOpen) {
+    return Linking.openURL(url);
+  } else {
+    const webUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+      message
+    )}`;
+    return Linking.openURL(webUrl);
+  }
 };
 
 // Generic fetcher for SWR

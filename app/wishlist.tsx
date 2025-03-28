@@ -17,8 +17,6 @@ export default function UserWishlist() {
   const colorScheme = useColorScheme();
   const { auth } = useAuth();
 
-  console.log(auth?.token);
-
   const baseUrl =
     "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
 
