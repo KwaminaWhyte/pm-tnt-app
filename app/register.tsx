@@ -137,7 +137,7 @@ export default function RegistrationScreen() {
       <SafeAreaView className="flex-1 bg-white dark:bg-slate-950">
         <ScrollView className="flex-1">
           {/* illustration */}
-          <MotiView className="h-[23vh] overflow-hidden justify-center items-center">
+          <MotiView className="h-[23vh] mt-20 overflow-hidden justify-center items-center">
             <Image
               source={require("@/assets/images/illustrations/hotel-booking.png")}
               className="object-contain w-[65%] h-full"
@@ -145,7 +145,7 @@ export default function RegistrationScreen() {
           </MotiView>
 
           {/* form*/}
-          <MotiView className="flex-1 px-4">
+          <MotiView className="flex-1 px-4 my-8">
             {/* welcome text */}
             <MotiView className="mt-2 mb-6">
               <MotiText className="font-bold text-3xl text-slate-900 dark:text-white">

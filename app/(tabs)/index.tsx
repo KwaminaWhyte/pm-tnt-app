@@ -197,7 +197,7 @@ export default function HomeScreen() {
           <View className="py-8 pb-4 ">
             <View className="flex-row px-4 justify-between items-center mb-2">
               <ThemedText className="font-semibold text-2xl">
-                Featured Destinations
+                Just In
               </ThemedText>
             </View>
 

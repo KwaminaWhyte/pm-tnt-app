@@ -74,8 +74,6 @@ export default function Bookings() {
     fetcher(auth?.token)
   );
 
-  if (data) console.log(JSON.stringify(data, null, 2));
-
   const handleApplyFilters = () => {
     setIsFilterModalVisible(false);
     mutate();
@@ -189,10 +187,10 @@ export default function Bookings() {
 
                   <View className="flex-1 ml-3">
                     <View className="flex-row items-center justify-between mb-1">
-                      <Text className="font-semibold text-lg dark:text-white">
+                      <Text className="font-semibold text-base dark:text-white">
                         {item.hotelBooking.hotelId.name}
                       </Text>
-                      <View
+                      {/* <View
                         className={`px-2 py-1 rounded-full ${
                           item.status === "Confirmed"
                             ? "bg-green-100"
@@ -212,7 +210,7 @@ export default function Bookings() {
                         >
                           {item.status}
                         </Text>
-                      </View>
+                      </View> */}
                     </View>
 
                     <View className="flex-row items-center mb-1">

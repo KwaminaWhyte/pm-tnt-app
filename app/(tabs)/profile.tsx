@@ -40,8 +40,8 @@ const WelcomeScreen = () => {
           className="w-48 h-48"
           resizeMode="contain"
         />
-        <ThemedText className="text-4xl font-bold mt-4 text-center">
-          Welcome to PM Travel
+        <ThemedText type="title" className="font-bold mt-4 text-center">
+          WELCOME TO PM TRIPPERS
         </ThemedText>
         <ThemedText className="text-base font-light text-center mt-2 text-slate-600 dark:text-slate-400">
           Sign in to access your profile, bookings, and travel preferences
@@ -168,9 +168,10 @@ const LoggedInProfile = () => {
       {/* Profile Header */}
       <View className="items-center pt-4 pb-6">
         <Image
-          source={{
-            uri: "https://t3.ftcdn.net/jpg/04/77/87/44/360_F_477874414_kSQ9ip26804g8B3ItYsh5XsjNRgqf693.jpg",
-          }}
+          source={require("@/assets/images/profile.png")}
+          // source={{
+          //   uri: "https://t3.ftcdn.net/jpg/04/77/87/44/360_F_477874414_kSQ9ip26804g8B3ItYsh5XsjNRgqf693.jpg",
+          // }}
           className="rounded-full w-32 h-32"
         />
         <Text className="text-slate-800 dark:text-white text-2xl font-semibold mt-3">
