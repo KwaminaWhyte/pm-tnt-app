@@ -45,6 +45,12 @@ export default function PackageDetailsScreen() {
   const package_data = data?.data;
 
   const showDatePicker = () => {
+    if (!package_data?.startDates || package_data.startDates.length === 0) {
+      toast.show("No available start dates for this package", {
+        type: "error",
+      });
+      return;
+    }
     setDatePickerVisible(true);
   };
 
@@ -52,18 +58,57 @@ export default function PackageDetailsScreen() {
     setDatePickerVisible(false);
   };
 
+  // Helper function to check if a date is available
+  const isDateAvailable = (date: Date) => {
+    return package_data?.startDates?.some((availableDate: string) => {
+      const startDate = new Date(availableDate);
+      return (
+        date.getFullYear() === startDate.getFullYear() &&
+        date.getMonth() === startDate.getMonth() &&
+        date.getDate() === startDate.getDate()
+      );
+    });
+  };
+
   const handleConfirmDate = (date: Date) => {
+    // Use the helper function to check date availability
+    if (!isDateAvailable(date)) {
+      toast.show("Selected date is not available for booking", {
+        type: "warning",
+      });
+      hideDatePicker();
+      return;
+    }
+
     setSelectedDate(date);
     hideDatePicker();
   };
 
   const getMinDate = () => {
+    if (package_data?.startDates && package_data.startDates.length > 0) {
+      return new Date(
+        Math.min(
+          ...package_data.startDates.map((date: string) =>
+            new Date(date).getTime()
+          )
+        )
+      );
+    }
     const today = new Date();
     today.setDate(today.getDate() + 1); // Minimum booking is tomorrow
     return today;
   };
 
   const getMaxDate = () => {
+    if (package_data?.startDates && package_data.startDates.length > 0) {
+      return new Date(
+        Math.max(
+          ...package_data.startDates.map((date: string) =>
+            new Date(date).getTime()
+          )
+        )
+      );
+    }
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 6); // Maximum booking is 6 months ahead
     return maxDate;
@@ -105,12 +150,55 @@ export default function PackageDetailsScreen() {
       router.push("/sign-in");
       return;
     }
+
+    // Check if there are available dates
+    if (!package_data?.startDates || package_data.startDates.length === 0) {
+      toast.show("No available start dates for this package", {
+        type: "error",
+      });
+      return;
+    }
+
+    // If no date is selected yet, suggest selecting one
+    if (!selectedDate) {
+      toast.show(
+        "Please select a date from the Available Start Dates section",
+        { type: "info" }
+      );
+    }
+
     setBookingModalVisible(true);
   };
 
   const handleBookPackage = async () => {
     if (!selectedDate) {
-      toast.show("Please select a date", { type: "warning" });
+      toast.show(
+        "Please select a date from the Available Start Dates section",
+        { type: "warning" }
+      );
+      return;
+    }
+
+    // Check if participants is within the allowed range
+    if (
+      package_data?.minParticipants &&
+      participants < package_data.minParticipants
+    ) {
+      toast.show(
+        `Minimum ${package_data.minParticipants} participants required`,
+        { type: "warning" }
+      );
+      return;
+    }
+
+    if (
+      package_data?.maxParticipants &&
+      participants > package_data.maxParticipants
+    ) {
+      toast.show(
+        `Maximum ${package_data.maxParticipants} participants allowed`,
+        { type: "warning" }
+      );
       return;
     }
 
@@ -171,6 +259,38 @@ export default function PackageDetailsScreen() {
     }
 
     return (package_data.price * participants * priceMultiplier).toFixed(2);
+  };
+
+  // Convert available dates to ISO strings for easier comparison
+  const getAvailableDateStrings = () => {
+    return (
+      package_data?.startDates?.map((date: string) => {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(d.getDate()).padStart(2, "0")}`;
+      }) || []
+    );
+  };
+
+  // Filter function for the date picker that only enables available dates
+  const dateFilter = (date: Date) => {
+    const availableDates = getAvailableDateStrings();
+    const dateString = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    return availableDates.includes(dateString);
+  };
+
+  // Add a function to select date directly from the available dates
+  const selectAvailableDate = (dateString: string) => {
+    setSelectedDate(new Date(dateString));
+
+    // If booking modal is not open, open it
+    if (!bookingModalVisible) {
+      openBookingModal();
+    }
   };
 
   if (isLoading) {
@@ -431,18 +551,46 @@ export default function PackageDetailsScreen() {
               <ThemedText className="text-lg font-semibold mb-3">
                 Available Start Dates
               </ThemedText>
-              <View className="flex-row flex-wrap">
-                {package_data.startDates.map((date: string, index: number) => (
-                  <View
-                    key={index}
-                    className="bg-yellow-100 dark:bg-yellow-900 px-3 py-2 rounded-lg mr-2 mb-2"
-                  >
-                    <ThemedText>
-                      {moment(date).format("MMM D, YYYY")}
-                    </ThemedText>
-                  </View>
-                ))}
-              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="mb-2"
+              >
+                {package_data.startDates
+                  .sort(
+                    (a: string, b: string) =>
+                      new Date(a).getTime() - new Date(b).getTime()
+                  )
+                  .map((date: string, index: number) => {
+                    const dateObj = new Date(date);
+                    const isSelected =
+                      selectedDate &&
+                      dateObj.getFullYear() === selectedDate.getFullYear() &&
+                      dateObj.getMonth() === selectedDate.getMonth() &&
+                      dateObj.getDate() === selectedDate.getDate();
+
+                    return (
+                      <Pressable
+                        key={index}
+                        className={`px-4 py-3 rounded-lg mr-2 ${
+                          isSelected
+                            ? "bg-yellow-500"
+                            : "bg-yellow-100 dark:bg-yellow-900"
+                        }`}
+                        onPress={() => selectAvailableDate(date)}
+                      >
+                        <ThemedText
+                          className={isSelected ? "text-white font-bold" : ""}
+                        >
+                          {moment(date).format("MMM D, YYYY")}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+              </ScrollView>
+              <ThemedText className="text-xs text-slate-500">
+                Tap a date to select it for booking
+              </ThemedText>
             </View>
           )}
 
@@ -559,17 +707,27 @@ export default function PackageDetailsScreen() {
                   color="#64748b"
                 />
               </Pressable>
+              <ThemedText className="mt-1 text-xs text-slate-500">
+                Note: Only dates shown in "Available Start Dates" section can be
+                selected
+              </ThemedText>
             </View>
 
             {/* Participants Selection */}
             <View className="mb-4">
               <ThemedText className="mb-2 font-medium">
                 Number of Participants
+                {package_data?.minParticipants &&
+                  package_data?.maxParticipants && (
+                    <ThemedText className="text-xs font-normal text-slate-500">
+                      {` (${package_data.minParticipants}-${package_data.maxParticipants})`}
+                    </ThemedText>
+                  )}
               </ThemedText>
               <View className="flex-row items-center">
                 <Pressable
+                  className="bg-slate-200 dark:bg-slate-800 w-10 h-10 rounded-lg items-center justify-center"
                   onPress={handleDecrementParticipants}
-                  className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg items-center justify-center"
                 >
                   <MaterialCommunityIcons
                     name="minus"
@@ -581,8 +739,8 @@ export default function PackageDetailsScreen() {
                   {participants}
                 </ThemedText>
                 <Pressable
+                  className="bg-slate-200 dark:bg-slate-800 w-10 h-10 rounded-lg items-center justify-center"
                   onPress={handleIncrementParticipants}
-                  className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg items-center justify-center"
                 >
                   <MaterialCommunityIcons
                     name="plus"
@@ -681,6 +839,7 @@ export default function PackageDetailsScreen() {
         onCancel={hideDatePicker}
         minimumDate={getMinDate()}
         maximumDate={getMaxDate()}
+        date={selectedDate || getMinDate()}
       />
     </ThemedView>
   );

@@ -16,9 +16,10 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import PackageSelector from "@/components/PackageSelector";
+import { Input } from "@/components/ui/input";
 
 export default function CreatePackageTemplate() {
-  const { token } = useAuth();
+  const { auth } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,9 +61,10 @@ export default function CreatePackageTemplate() {
     const fetchPackages = async () => {
       try {
         setLoading(true);
-        const response = await getPackages(token);
-        const activePackages = response.filter(
-          (pkg) => pkg.status === "Active"
+        const response = await getPackages(auth?.token);
+
+        const activePackages = response.data.data?.filter(
+          (pkg: any) => pkg.status === "Active"
         );
         setPackages(activePackages);
       } catch (error) {
@@ -77,10 +79,10 @@ export default function CreatePackageTemplate() {
       }
     };
 
-    if (token) {
+    if (auth?.token) {
       fetchPackages();
     }
-  }, [token]);
+  }, [auth?.token]);
 
   const handleSelectPackage = (pkg) => {
     setSelectedPackage(pkg);
@@ -98,6 +100,8 @@ export default function CreatePackageTemplate() {
   };
 
   const handleSubmit = async () => {
+    console.log("formData", formData);
+
     if (!formData.name || !formData.basePackageId) {
       Toast.show({
         type: "error",
@@ -109,7 +113,7 @@ export default function CreatePackageTemplate() {
 
     try {
       setSubmitting(true);
-      const response = await createPackageTemplate(formData, token);
+      const response = await createPackageTemplate(formData, auth?.token);
 
       Toast.show({
         type: "success",
@@ -161,12 +165,11 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.sectionTitle}>Basic Information</ThemedText>
 
           <ThemedText style={styles.label}>Template Name *</ThemedText>
-          <TextInput
-            style={styles.input}
+          <Input
             value={formData.name}
             onChangeText={(text) => handleInputChange("name", text)}
             placeholder="Enter a name for your custom package"
-            placeholderTextColor={Colors.gray[400]}
+            // errorMessage={errors.email}
           />
 
           <ThemedText style={styles.label}>Description</ThemedText>

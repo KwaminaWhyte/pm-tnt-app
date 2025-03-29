@@ -73,8 +73,11 @@ export const getHotels = async (params?: Record<string, any>) => {
 };
 
 // Fetch packages with optional params
-export const getPackages = async (params?: Record<string, any>) => {
-  const api = createApiInstance();
+export const getPackages = async (
+  token?: string,
+  params?: Record<string, any>
+) => {
+  const api = createApiInstance(token);
   return api.get("/packages", { params });
 };
 
@@ -259,14 +262,18 @@ export const getVehicleById = async (id: string, token?: string) => {
 
 // Package Templates API
 export const getMyPackageTemplates = async (token?: string) => {
+  console.log("token", token);
+
   try {
     const response = await axios.get(`${BASE_URL}/packages/templates/my`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+    console.log(response.data.data);
+
     return response.data.data;
   } catch (error) {
     console.error("Error fetching my package templates:", error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -278,7 +285,7 @@ export const getPublicPackageTemplates = async (params?: any) => {
     return response.data.data;
   } catch (error) {
     console.error("Error fetching public package templates:", error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -290,7 +297,7 @@ export const getPackageTemplateById = async (id: string, token?: string) => {
     return response.data.data;
   } catch (error) {
     console.error(`Error fetching package template ${id}:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -309,7 +316,7 @@ export const createPackageTemplate = async (
     return response.data.data;
   } catch (error) {
     console.error("Error creating package template:", error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -329,7 +336,7 @@ export const updatePackageTemplate = async (
     return response.data.data;
   } catch (error) {
     console.error(`Error updating package template ${id}:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -344,7 +351,7 @@ export const deletePackageTemplate = async (id: string, token?: string) => {
     return response.data.data;
   } catch (error) {
     console.error(`Error deleting package template ${id}:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -363,7 +370,7 @@ export const submitPackageTemplateForReview = async (
     return response.data.data;
   } catch (error) {
     console.error(`Error submitting package template ${id} for review:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -384,7 +391,7 @@ export const checkPackageTemplateAvailability = async (
     return response.data.data;
   } catch (error) {
     console.error(`Error checking package template ${id} availability:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -398,7 +405,7 @@ export const getAllTemplatesForAdmin = async (params: any, token?: string) => {
     return response.data.data;
   } catch (error) {
     console.error("Error fetching all templates for admin:", error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -418,7 +425,7 @@ export const approvePackageTemplate = async (
     return response.data.data;
   } catch (error) {
     console.error(`Error approving package template ${id}:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -438,7 +445,7 @@ export const rejectPackageTemplate = async (
     return response.data.data;
   } catch (error) {
     console.error(`Error rejecting package template ${id}:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
 
@@ -457,6 +464,6 @@ export const publishPackageTemplateAsPackage = async (
     return response.data.data;
   } catch (error) {
     console.error(`Error publishing package template ${id} as package:`, error);
-    throw handleApiError(error);
+    throw error;
   }
 };
