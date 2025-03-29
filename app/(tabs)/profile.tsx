@@ -16,6 +16,8 @@ import {
   Text,
   useColorScheme,
   View,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import {
   SafeAreaView,
@@ -24,6 +26,8 @@ import {
 import { PhWarningCircleDuotone } from "@/components/icons/phosphorus";
 import { useAlertModal } from "@/context/AlertModalContext";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
+import { useToast } from "react-native-toast-notifications";
 
 const WelcomeScreen = () => {
   const colorScheme = useColorScheme();
@@ -40,7 +44,7 @@ const WelcomeScreen = () => {
           className="w-48 h-48"
           resizeMode="contain"
         />
-        <ThemedText type="title" className="font-bold mt-4 text-center">
+        <ThemedText type="subtitle" className="font-bold mt-4 text-center">
           WELCOME TO PM TRIPPERS
         </ThemedText>
         <ThemedText className="text-base font-light text-center mt-2 text-slate-600 dark:text-slate-400">
@@ -48,10 +52,10 @@ const WelcomeScreen = () => {
         </ThemedText>
       </View>
 
-      <View className="w-full gap-y-5 px-6">
+      <View className="w-full gap-y-5">
         <Pressable
           onPress={() => router.push("/login" as Href)}
-          className="h-14 bg-yellow-500 rounded-2xl items-center justify-center"
+          className="bg-yellow-500 w-full py-3 rounded-xl items-center"
         >
           <Text className="font-medium text-lg text-white">Sign In</Text>
         </Pressable>
@@ -64,7 +68,7 @@ const WelcomeScreen = () => {
 
         <Pressable
           onPress={() => router.push("/register" as Href)}
-          className="h-14 bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
+          className=" py-3  bg-transparent border-2 border-yellow-500 rounded-2xl items-center justify-center"
         >
           <Text className="text-yellow-500 font-medium text-lg">
             Create Account
@@ -80,6 +84,32 @@ const LoggedInProfile = () => {
   const { logout, auth } = useAuth();
   const { top } = useSafeAreaInsets();
   const { showAlert } = useAlertModal();
+  const toast = useToast();
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userData, setUserData] = useState(auth?.user);
+
+  useEffect(() => {
+    if (auth?.user) {
+      setUserData(auth.user);
+    }
+  }, [auth?.user]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // In a real app, you would refresh user data here
+      // For now we'll simulate a refresh with a timeout
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setUserData(auth?.user);
+      toast.show("Profile refreshed", { type: "success" });
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+      toast.show("Failed to refresh profile", { type: "error" });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleSignOut = () => {
     showAlert(
@@ -89,7 +119,16 @@ const LoggedInProfile = () => {
         </ThemedText>
       </View>,
       () => {
-        logout();
+        setIsLoading(true);
+        try {
+          logout();
+          toast.show("Successfully signed out", { type: "success" });
+        } catch (error) {
+          toast.show("Failed to sign out", { type: "error" });
+          console.error("Logout error:", error);
+        } finally {
+          setIsLoading(false);
+        }
       }
     );
   };
@@ -163,8 +202,22 @@ const LoggedInProfile = () => {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#eab308" />
+        <ThemedText className="mt-4">Processing...</ThemedText>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView className="flex-1 bg-slate-100 dark:bg-slate-950">
+    <ScrollView
+      className="flex-1 bg-slate-100 dark:bg-slate-950"
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
       {/* Profile Header */}
       <View className="items-center pt-4 pb-6">
         <Image
@@ -175,16 +228,21 @@ const LoggedInProfile = () => {
           className="rounded-full w-32 h-32"
         />
         <Text className="text-slate-800 dark:text-white text-2xl font-semibold mt-3">
-          {auth?.user?.firstName + " " + auth?.user?.lastName}
+          {userData?.firstName + " " + userData?.lastName}
         </Text>
         <Text className="text-slate-500 font-light text-sm">
-          {auth?.user?.email}
+          {userData?.email}
         </Text>
+        {userData?.phone && (
+          <Text className="text-slate-500 font-light text-sm mt-1">
+            {userData.phone}
+          </Text>
+        )}
       </View>
 
       {/* Navigation Items */}
-      <View className=" py-6">
-        <View className="bg-white dark:bg-slate-900">
+      <View className="py-6">
+        <View className="bg-white dark:bg-slate-900 rounded-xl mx-4 overflow-hidden shadow-sm">
           {profileNav.map((item, index) => (
             <Pressable
               key={index}
@@ -217,11 +275,13 @@ const LoggedInProfile = () => {
 
 export default function Profile() {
   const { auth, authLoading } = useAuth();
+  const toast = useToast();
 
   if (authLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-slate-900 items-center justify-center">
-        <ThemedText className="font">Loading...</ThemedText>
+        <ActivityIndicator size="large" color="#eab308" />
+        <ThemedText className="mt-4">Loading...</ThemedText>
       </SafeAreaView>
     );
   }

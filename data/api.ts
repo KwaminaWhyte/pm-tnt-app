@@ -4,6 +4,8 @@ import { Linking } from "react-native";
 export const BASE_URL =
   "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
 
+// export const BASE_URL = "http://172.23.144.1.:3310/api/v1";
+
 // Helper to create API instance with optional auth token
 export const createApiInstance = (token?: string) => {
   const headers: Record<string, string> = {
@@ -111,10 +113,11 @@ export const bookPackage = async (
 
 // GET MY BOOKINGS
 export const getMyBookings = async (
-  status: string = "upcoming",
+  status: string = "Confirmed,Pending",
   startDate?: string,
   endDate?: string,
-  token?: string
+  token?: string,
+  bookingType: string = "all"
 ) => {
   try {
     if (!token) {
@@ -125,7 +128,8 @@ export const getMyBookings = async (
       Authorization: `Bearer ${token}`,
     };
 
-    let url = `${BASE_URL}/bookings/my-bookings?status=${status}`;
+    let url = `${BASE_URL}/bookings/my-bookings?bookingType=${bookingType}`;
+    if (status) url += `&status=${status}`;
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;
 

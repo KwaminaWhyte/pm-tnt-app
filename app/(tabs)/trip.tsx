@@ -28,13 +28,19 @@ const CARD_WIDTH = width - 40;
 // Types for the bookings
 interface Booking {
   _id: string;
-  type: "hotel" | "vehicle" | "package";
+  type: "vehicle" | "package";
   name: string;
   location: string;
   image: string;
   startDate: string;
   endDate: string;
-  status: "confirmed" | "pending" | "completed" | "canceled";
+  status:
+    | "Draft"
+    | "Pending"
+    | "Confirmed"
+    | "InProgress"
+    | "Completed"
+    | "Cancelled";
   paymentStatus: "paid" | "pending" | "partial" | "refunded";
   bookingNumber: string;
   price: number;
@@ -47,7 +53,9 @@ export default function TripScreen() {
   const colorScheme = useColorScheme();
   const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past" | "canceled">(
+    "upcoming"
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [trips, setTrips] = useState<Booking[]>([]);
 
@@ -60,20 +68,119 @@ export default function TripScreen() {
     }
   }, [auth?.token, activeTab]);
 
+  // Map the UI tabs to backend status values
+  const getStatusesForTab = (tab: string) => {
+    switch (tab) {
+      case "upcoming":
+        return ["Confirmed", "Pending"];
+      case "past":
+        return ["Completed", "InProgress"];
+      case "canceled":
+        return ["Cancelled"];
+      default:
+        return ["Confirmed", "Pending"];
+    }
+  };
+
   const loadTrips = async () => {
     setIsLoading(true);
     try {
-      const response = await getMyBookings(
-        activeTab,
+      // Get the correct statuses from the backend based on selected tab
+      const statuses = getStatusesForTab(activeTab);
+      const statusParam = statuses.join(",");
+
+      // Only fetch vehicle and package bookings, not hotels
+      const vehicleResponse = await getMyBookings(
+        statusParam,
         undefined,
         undefined,
-        auth?.token
+        auth?.token,
+        "vehicle"
       );
 
-      if (response?.data?.data) {
-        setTrips(response.data.data);
+      const packageResponse = await getMyBookings(
+        statusParam,
+        undefined,
+        undefined,
+        auth?.token,
+        "package"
+      );
+
+      let combinedData: Booking[] = [];
+
+      // Process vehicle data
+      if (vehicleResponse?.data?.data?.bookings) {
+        const vehicleBookings = vehicleResponse.data.data.bookings.map(
+          (booking: any) => ({
+            _id: booking._id,
+            type: "vehicle",
+            name:
+              booking.vehicleBooking?.vehicleId?.make +
+              " " +
+              booking.vehicleBooking?.vehicleId?.model,
+            location:
+              booking.vehicleBooking?.pickupLocation?.city || "Not specified",
+            image:
+              booking.vehicleBooking?.vehicleId?.images?.[0] ||
+              "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf",
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            status: booking.status,
+            paymentStatus: booking.payment?.status?.toLowerCase() || "pending",
+            bookingNumber: booking.bookingReference,
+            price: booking.pricing?.totalPrice || 0,
+            details: {
+              vehicleDetails: `${
+                booking.vehicleBooking?.vehicleId?.details?.transmission ||
+                "N/A"
+              }, ${
+                booking.vehicleBooking?.vehicleId?.capacity || "N/A"
+              } Seater`,
+              licensePlate:
+                booking.vehicleBooking?.vehicleId?.details?.licensePlate ||
+                "N/A",
+            },
+            cancellationReason: booking.cancellation?.reason,
+          })
+        );
+        combinedData = [...combinedData, ...vehicleBookings];
+      }
+
+      // Process package data
+      if (packageResponse?.data?.data?.bookings) {
+        const packageBookings = packageResponse.data.data.bookings.map(
+          (booking: any) => ({
+            _id: booking._id,
+            type: "package",
+            name: booking.packageBooking?.packageId?.name || "Package Booking",
+            location:
+              booking.packageBooking?.packageId?.location?.city ||
+              "Not specified",
+            image:
+              booking.packageBooking?.packageId?.images?.[0] ||
+              "https://images.unsplash.com/photo-1544735716-392fe2489ffa",
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            status: booking.status,
+            paymentStatus: booking.payment?.status?.toLowerCase() || "pending",
+            bookingNumber: booking.bookingReference,
+            price: booking.pricing?.totalPrice || 0,
+            details: {
+              participants: booking.packageBooking?.participants?.length || 2,
+              packageDetails:
+                booking.packageBooking?.packageId?.description ||
+                "Package details not available",
+            },
+            cancellationReason: booking.cancellation?.reason,
+          })
+        );
+        combinedData = [...combinedData, ...packageBookings];
+      }
+
+      if (combinedData.length > 0) {
+        setTrips(combinedData);
       } else {
-        // If the API endpoint isn't fully implemented yet, use sample data
+        // If no real data, use sample data as fallback
         setTrips(
           getSampleTrips()[activeTab as keyof typeof getSampleTrips] || []
         );
@@ -100,24 +207,6 @@ export default function TripScreen() {
   const getSampleTrips = () => ({
     upcoming: [
       {
-        _id: "up1",
-        type: "hotel",
-        name: "Labadi Beach Hotel",
-        location: "Accra, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG90ZWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 8).toISOString(),
-        status: "confirmed",
-        paymentStatus: "paid",
-        bookingNumber: "HTL-2023-5692",
-        price: 350,
-        details: {
-          guests: 2,
-          roomType: "Deluxe Ocean View",
-        },
-      },
-      {
         _id: "up2",
         type: "package",
         name: "Kakum National Park Adventure",
@@ -128,7 +217,7 @@ export default function TripScreen() {
           Date.now() + 1000 * 60 * 60 * 24 * 12
         ).toISOString(),
         endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
-        status: "pending",
+        status: "Pending",
         paymentStatus: "partial",
         bookingNumber: "PKG-2023-3421",
         price: 220,
@@ -148,7 +237,7 @@ export default function TripScreen() {
           Date.now() + 1000 * 60 * 60 * 24 * 20
         ).toISOString(),
         endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 25).toISOString(),
-        status: "confirmed",
+        status: "Confirmed",
         paymentStatus: "pending",
         bookingNumber: "VEH-2023-7812",
         price: 475,
@@ -160,26 +249,6 @@ export default function TripScreen() {
     ],
     past: [
       {
-        _id: "past1",
-        type: "hotel",
-        name: "Kempinski Hotel",
-        location: "Accra, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG90ZWwlMjByb29tfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(
-          Date.now() - 1000 * 60 * 60 * 24 * 20
-        ).toISOString(),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
-        status: "completed",
-        paymentStatus: "paid",
-        bookingNumber: "HTL-2023-4502",
-        price: 540,
-        details: {
-          guests: 2,
-          roomType: "Executive Suite",
-        },
-      },
-      {
         _id: "past2",
         type: "vehicle",
         name: "Hyundai Tucson",
@@ -190,7 +259,7 @@ export default function TripScreen() {
           Date.now() - 1000 * 60 * 60 * 24 * 35
         ).toISOString(),
         endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 32).toISOString(),
-        status: "completed",
+        status: "Completed",
         paymentStatus: "paid",
         bookingNumber: "VEH-2023-6325",
         price: 280,
@@ -210,7 +279,7 @@ export default function TripScreen() {
           Date.now() - 1000 * 60 * 60 * 24 * 60
         ).toISOString(),
         endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 57).toISOString(),
-        status: "completed",
+        status: "Completed",
         paymentStatus: "paid",
         bookingNumber: "PKG-2023-2198",
         price: 650,
@@ -223,27 +292,6 @@ export default function TripScreen() {
     ],
     canceled: [
       {
-        _id: "can1",
-        type: "hotel",
-        name: "Elmina Beach Resort",
-        location: "Elmina, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGJlYWNoJTIwcmVzb3J0fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(
-          Date.now() - 1000 * 60 * 60 * 24 * 15
-        ).toISOString(),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
-        status: "canceled",
-        paymentStatus: "refunded",
-        bookingNumber: "HTL-2023-5284",
-        price: 300,
-        details: {
-          guests: 2,
-          roomType: "Standard Ocean View",
-        },
-        cancellationReason: "Weather conditions",
-      },
-      {
         _id: "can2",
         type: "package",
         name: "Akosombo Dam Tour",
@@ -254,7 +302,7 @@ export default function TripScreen() {
           Date.now() - 1000 * 60 * 60 * 24 * 45
         ).toISOString(),
         endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 44).toISOString(),
-        status: "canceled",
+        status: "Cancelled",
         paymentStatus: "refunded",
         bookingNumber: "PKG-2023-1854",
         price: 120,
@@ -268,14 +316,16 @@ export default function TripScreen() {
   });
 
   const getStatusColor = (status: string) => {
-    if (status === "confirmed")
+    if (status === "Confirmed")
       return "bg-green-500/10 text-green-700 dark:text-green-400";
-    if (status === "pending")
+    if (status === "Pending")
       return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
-    if (status === "completed")
+    if (status === "Completed" || status === "InProgress")
       return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
-    if (status === "canceled")
+    if (status === "Cancelled")
       return "bg-red-500/10 text-red-700 dark:text-red-400";
+    if (status === "Draft")
+      return "bg-slate-500/10 text-slate-700 dark:text-slate-400";
     return "bg-slate-500/10 text-slate-700 dark:text-slate-400";
   };
 
@@ -302,8 +352,6 @@ export default function TripScreen() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "hotel":
-        return <MaterialCommunityIcons name="bed" size={20} color="#eab308" />;
       case "vehicle":
         return <MaterialCommunityIcons name="car" size={20} color="#eab308" />;
       case "package":
@@ -324,14 +372,12 @@ export default function TripScreen() {
   const handleSupportChat = (bookingNumber: string) => {
     openWhatsAppChat(
       "+233245678901",
-      `Hello, I need support for my booking ${bookingNumber}`
+      `Hello, I need support for my trip booking ${bookingNumber}`
     );
   };
 
   const navigateToDetail = (item: Booking) => {
-    if (item.type === "hotel") {
-      router.push(`/booking-details?id=${item._id}&type=hotel`);
-    } else if (item.type === "vehicle") {
+    if (item.type === "vehicle") {
       router.push(`/booking-details?id=${item._id}&type=vehicle`);
     } else if (item.type === "package") {
       router.push(`/booking-details?id=${item._id}&type=package`);
@@ -359,14 +405,17 @@ export default function TripScreen() {
           className="w-40 h-40"
           resizeMode="contain"
         />
-        <ThemedText className="text-xl font-lexend-medium text-center mt-6">
+        <ThemedText
+          type="subtitle"
+          className="font-lexend-medium text-center mt-6"
+        >
           Sign in to view your trips
         </ThemedText>
         <ThemedText className="text-slate-500 text-center mt-2 mb-6">
-          Track all your bookings and travel history in one place
+          Track all your travel bookings and trip history in one place
         </ThemedText>
         <Pressable
-          onPress={() => router.push("/sign-in")}
+          onPress={() => router.push("/login")}
           className="bg-yellow-500 w-full py-3 rounded-xl items-center"
         >
           <ThemedText className="text-white font-lexend-medium">
@@ -383,7 +432,7 @@ export default function TripScreen() {
       <View className="px-4 py-3">
         <ThemedText className="text-2xl font-lexend-bold">My Trips</ThemedText>
         <ThemedText className="text-slate-500 font-lexend-light">
-          Manage your travel bookings
+          Manage your vehicle rentals and travel packages
         </ThemedText>
       </View>
 
@@ -482,14 +531,24 @@ export default function TripScreen() {
               : "Your canceled bookings will appear here"}
           </ThemedText>
           {activeTab === "upcoming" && (
-            <Pressable
-              onPress={() => router.push("/book?category=hotels")}
-              className="mt-6 bg-yellow-500 px-6 py-3 rounded-xl"
-            >
-              <ThemedText className="text-white font-lexend-medium">
-                Browse Hotels
-              </ThemedText>
-            </Pressable>
+            <View className="flex-row space-x-4 mt-6">
+              <Pressable
+                onPress={() => router.push("/book?category=vehicles")}
+                className="bg-yellow-500 px-4 py-3 rounded-xl"
+              >
+                <ThemedText className="text-white font-lexend-medium">
+                  Rent Vehicle
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/book?category=packages")}
+                className="bg-yellow-500 px-4 py-3 rounded-xl"
+              >
+                <ThemedText className="text-white font-lexend-medium">
+                  Book Package
+                </ThemedText>
+              </Pressable>
+            </View>
           )}
         </View>
       ) : (
@@ -520,11 +579,7 @@ export default function TripScreen() {
                 <View className="flex-row items-center mb-1">
                   {getTypeIcon(item.type)}
                   <ThemedText className="ml-2 text-sm text-slate-500">
-                    {item.type === "hotel"
-                      ? "Hotel"
-                      : item.type === "vehicle"
-                      ? "Vehicle"
-                      : "Package"}
+                    {item.type === "vehicle" ? "Vehicle" : "Package"}
                   </ThemedText>
                 </View>
                 <ThemedText className="text-lg font-lexend-medium mb-1">
@@ -570,21 +625,6 @@ export default function TripScreen() {
 
                 {/* Details by Type */}
                 <View className="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
-                  {item.type === "hotel" && item.details && (
-                    <>
-                      <View className="flex-row justify-between mb-2">
-                        <ThemedText className="text-slate-500">Room</ThemedText>
-                        <ThemedText>{item.details.roomType}</ThemedText>
-                      </View>
-                      <View className="flex-row justify-between">
-                        <ThemedText className="text-slate-500">
-                          Guests
-                        </ThemedText>
-                        <ThemedText>{item.details.guests}</ThemedText>
-                      </View>
-                    </>
-                  )}
-
                   {item.type === "vehicle" && item.details && (
                     <>
                       <View className="flex-row justify-between mb-2">
@@ -657,8 +697,7 @@ export default function TripScreen() {
                           .slice(1)
                           .join(" ")}`}
                       >
-                        {item.status.charAt(0).toUpperCase() +
-                          item.status.slice(1)}
+                        {item.status}
                       </ThemedText>
                     </View>
                     <View
@@ -693,7 +732,7 @@ export default function TripScreen() {
                 </View>
 
                 {/* Cancellation Reason (if applicable) */}
-                {item.status === "canceled" && item.cancellationReason && (
+                {item.status === "Cancelled" && item.cancellationReason && (
                   <View className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                     <ThemedText className="text-sm text-slate-500">
                       Cancellation reason: {item.cancellationReason}
