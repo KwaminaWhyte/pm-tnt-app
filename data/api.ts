@@ -97,8 +97,10 @@ export const bookPackage = async (
 
     const headers = {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
     };
-    console.log(bookingData);
+    console.log(bookingData, token);
 
     const response = await axios.post(
       `${BASE_URL}/bookings/packages`,
@@ -252,5 +254,209 @@ export const getVehicleById = async (id: string, token?: string) => {
   } catch (error) {
     console.error("Error fetching vehicle details:", error);
     throw error;
+  }
+};
+
+// Package Templates API
+export const getMyPackageTemplates = async (token?: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/packages/templates/my`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching my package templates:", error);
+    throw handleApiError(error);
+  }
+};
+
+export const getPublicPackageTemplates = async (params?: any) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/packages/templates/public`, {
+      params,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching public package templates:", error);
+    throw handleApiError(error);
+  }
+};
+
+export const getPackageTemplateById = async (id: string, token?: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/packages/templates/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error fetching package template ${id}:`, error);
+    throw handleApiError(error);
+  }
+};
+
+export const createPackageTemplate = async (
+  templateData: any,
+  token?: string
+) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/packages/templates`,
+      templateData,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error("Error creating package template:", error);
+    throw handleApiError(error);
+  }
+};
+
+export const updatePackageTemplate = async (
+  id: string,
+  templateData: any,
+  token?: string
+) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/packages/templates/${id}`,
+      templateData,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating package template ${id}:`, error);
+    throw handleApiError(error);
+  }
+};
+
+export const deletePackageTemplate = async (id: string, token?: string) => {
+  try {
+    const response = await axios.delete(
+      `${BASE_URL}/packages/templates/${id}`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error deleting package template ${id}:`, error);
+    throw handleApiError(error);
+  }
+};
+
+export const submitPackageTemplateForReview = async (
+  id: string,
+  token?: string
+) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/packages/templates/${id}/submit`,
+      {},
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error submitting package template ${id} for review:`, error);
+    throw handleApiError(error);
+  }
+};
+
+export const checkPackageTemplateAvailability = async (
+  id: string,
+  date: string,
+  participants: number,
+  token?: string
+) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/packages/templates/${id}/availability`,
+      {
+        params: { date, participants },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error checking package template ${id} availability:`, error);
+    throw handleApiError(error);
+  }
+};
+
+// Admin API functions for Package Templates
+export const getAllTemplatesForAdmin = async (params: any, token?: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/packages/admin/templates`, {
+      params,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching all templates for admin:", error);
+    throw handleApiError(error);
+  }
+};
+
+export const approvePackageTemplate = async (
+  id: string,
+  feedback: string,
+  token?: string
+) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/packages/templates/${id}/approve`,
+      { feedback },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error approving package template ${id}:`, error);
+    throw handleApiError(error);
+  }
+};
+
+export const rejectPackageTemplate = async (
+  id: string,
+  feedback: string,
+  token?: string
+) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/packages/templates/${id}/reject`,
+      { feedback },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error rejecting package template ${id}:`, error);
+    throw handleApiError(error);
+  }
+};
+
+export const publishPackageTemplateAsPackage = async (
+  id: string,
+  token?: string
+) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/packages/templates/${id}/publish`,
+      {},
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error publishing package template ${id} as package:`, error);
+    throw handleApiError(error);
   }
 };
