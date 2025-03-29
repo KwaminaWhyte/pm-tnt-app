@@ -347,11 +347,7 @@ export default function BookingScreen() {
                       <Pressable
                         onPress={() =>
                           router.push(
-                            `/vehicle-details?vehicle=${JSON.stringify({
-                              _id: item?._id,
-                              make: item?.make,
-                              model: item?.model,
-                            })}` as Href
+                            `/vehicle-details?id=${item?._id}` as Href
                           )
                         }
                         className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full"

@@ -115,3 +115,21 @@ export const fetcher = (token?: string) => async (url: string) => {
   const response = await api.get(url);
   return response.data;
 };
+
+// Get vehicle by ID
+export const getVehicleById = async (id: string, token?: string) => {
+  try {
+    const headers: any = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await axios.get(`${BASE_URL}/vehicles/public/${id}`, {
+      headers,
+    });
+    return response;
+  } catch (error) {
+    console.error("Error fetching vehicle details:", error);
+    throw error;
+  }
+};
