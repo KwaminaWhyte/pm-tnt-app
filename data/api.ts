@@ -98,6 +98,7 @@ export const bookPackage = async (
     const headers = {
       Authorization: `Bearer ${token}`,
     };
+    console.log(bookingData);
 
     const response = await axios.post(
       `${BASE_URL}/bookings/packages`,

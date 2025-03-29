@@ -126,14 +126,22 @@ export default function PackageDetailsScreen() {
 
       const response = await bookPackage(bookingData, auth?.token);
 
-      setBookingModalVisible(false);
-      toast.show("Booking successful!", { type: "success" });
-      router.push("/trip?category=upcoming");
+      if (response?.data?.success) {
+        setBookingModalVisible(false);
+        toast.show("Booking successful!", { type: "success" });
+        router.push("/trip?category=upcoming");
+      } else {
+        // Handle API error response
+        const errorMessage =
+          response?.data?.message || "An error occurred while booking";
+        toast.show(errorMessage, { type: "error" });
+      }
     } catch (error: any) {
       console.error("Booking error:", error);
-      toast.show(error.response?.data?.message || "Failed to book package", {
-        type: "error",
-      });
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to book package. Please try again later.";
+      toast.show(errorMessage, { type: "error" });
     } finally {
       setProcessing(false);
     }
