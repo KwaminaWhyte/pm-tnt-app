@@ -30,8 +30,14 @@ import { BookingSkeleton } from "@/components/skeletons/bookings";
 import { TabItem } from "@/components/ui/tabs";
 import { VehicleListingCard } from "@/components/pressable-cards/vehicle";
 import { useAuth } from "@/context/AuthContext";
-import axios from "axios";
 import { useToast } from "react-native-toast-notifications";
+import {
+  BASE_URL,
+  checkFavorite,
+  toggleFavorite,
+  getHotels,
+  getPackages,
+} from "@/data/api";
 
 LogBox.ignoreAllLogs();
 
@@ -59,15 +65,13 @@ export default function BookingScreen() {
   }, []);
 
   // Fetch available options based on selected type
-  const baseUrl =
-    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
   const { data, isLoading } = useSWR(
     category === "packages"
-      ? `${baseUrl}/packages?searchTerm=${searchTerm || ""}`
+      ? `${BASE_URL}/packages?searchTerm=${searchTerm || ""}`
       : category === "vehicles"
-      ? `${baseUrl}/vehicles/public?searchTerm=${searchTerm || ""}`
-      : `${baseUrl}/hotels/public?searchTerm=${searchTerm || ""}`,
-    fetcher()
+      ? `${BASE_URL}/vehicles/public?searchTerm=${searchTerm || ""}`
+      : `${BASE_URL}/hotels/public?searchTerm=${searchTerm || ""}`,
+    fetcher(auth?.token)
   );
 
   useEffect(() => {
@@ -82,9 +86,11 @@ export default function BookingScreen() {
     try {
       if (!auth?.token) return;
       const promises = itemIds.map((id) =>
-        axios.get(`${baseUrl}/favorites/check/${category.slice(0, -1)}/${id}`, {
-          headers: { Authorization: `Bearer ${auth?.token}` },
-        })
+        checkFavorite(
+          id,
+          category?.slice(0, -1) as "hotel" | "vehicle" | "package",
+          auth?.token
+        )
       );
       const responses = await Promise.all(promises);
       const newFavorites = responses.reduce((acc, response, index) => {
@@ -108,10 +114,10 @@ export default function BookingScreen() {
     }
     setFavLoadingStates((prev) => ({ ...prev, [itemId]: true }));
     try {
-      await axios.post(
-        `${baseUrl}/favorites/${category.slice(0, -1)}/${itemId}`,
-        {},
-        { headers: { Authorization: `Bearer ${auth?.token}` } }
+      await toggleFavorite(
+        itemId,
+        category?.slice(0, -1) as "hotel" | "vehicle" | "package",
+        auth?.token
       );
       setFavorites((prev) => {
         const newState = { ...prev, [itemId]: !prev[itemId] };
@@ -176,7 +182,7 @@ export default function BookingScreen() {
       className="flex-1 bg-slate-200/20 dark:bg-slate-900"
     >
       <View className="px-4 py-4">
-        <ThemedText className="text-3xl font-lexend-bold mb-2">
+        <ThemedText type="title" className="mb-2">
           Book Your Next Adventure
         </ThemedText>
         <ThemedText className="font-lexend-light">
@@ -341,9 +347,11 @@ export default function BookingScreen() {
                       <Pressable
                         onPress={() =>
                           router.push(
-                            `/vehicle-details?vehicle=${JSON.stringify(
-                              item
-                            )}` as Href
+                            `/vehicle-details?vehicle=${JSON.stringify({
+                              _id: item?._id,
+                              make: item?.make,
+                              model: item?.model,
+                            })}` as Href
                           )
                         }
                         className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full"

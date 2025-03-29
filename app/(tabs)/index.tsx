@@ -226,7 +226,7 @@ export default function HomeScreen() {
             <View className="flex-row justify-between h-16 items-center pr-4">
               <Image source={logo} className="h-24 w-24" />
               <TouchableOpacity
-                onPress={() => router.push("notification" as Href)}
+                onPress={() => router.push("notifications" as Href)}
               >
                 <MaterialCommunityIcons
                   name="bell-badge"

@@ -30,13 +30,15 @@ export default function VehicleDetails() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedImage, setSelectedImage] = useState("");
 
-  const vehicleData = JSON.parse(vehicle as string);
+  const [vehicleData, setVehicleData] = useState(JSON.parse(vehicle as string));
+
+  console.log("vehicle", vehicleData);
   const baseUrl =
     "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
 
   useEffect(() => {
-    if (vehicleData.images?.[0]) {
-      setSelectedImage(vehicleData.images[0]);
+    if (vehicleData?.images?.[0]) {
+      setSelectedImage(vehicleData?.images?.[0]);
     }
   }, [vehicleData]);
 
@@ -141,7 +143,7 @@ export default function VehicleDetails() {
         )}
 
         {/* Title and Price */}
-        <View className="mb-6">
+        <View className="my-6">
           <Text className="font-semibold text-3xl px-3 dark:text-white">
             {vehicleData.make} {vehicleData.model}
           </Text>

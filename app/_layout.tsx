@@ -72,6 +72,12 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="notifications"
+                    options={{
+                      title: "Notifications",
+                    }}
+                  />
+                  <Stack.Screen
                     name="bookings"
                     options={{
                       title: "My Bookings",

@@ -13,7 +13,7 @@ import {
   SettingsBroken,
   SettingsFilled,
 } from "@/components/icons/tabs";
-import { Plane, PlaneTakeoff } from "lucide-react-native";
+import { MapPin, Plane, PlaneTakeoff } from "lucide-react-native";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -71,7 +71,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <>
               {focused ? (
-                <Plane color={color} />
+                <MapPin color={color} />
               ) : (
                 <PlaneTakeoff color={color} />
               )}
