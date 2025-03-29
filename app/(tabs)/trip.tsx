@@ -20,197 +20,71 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { getMyBookings, openWhatsAppChat } from "@/data/api";
+import { useToast } from "react-native-toast-notifications";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
 
+// Types for the bookings
+interface Booking {
+  _id: string;
+  type: "hotel" | "vehicle" | "package";
+  name: string;
+  location: string;
+  image: string;
+  startDate: string;
+  endDate: string;
+  status: "confirmed" | "pending" | "completed" | "canceled";
+  paymentStatus: "paid" | "pending" | "partial" | "refunded";
+  bookingNumber: string;
+  price: number;
+  details: any;
+  [key: string]: any;
+}
+
 export default function TripScreen() {
   const { auth, authLoading } = useAuth();
   const colorScheme = useColorScheme();
+  const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [isLoading, setIsLoading] = useState(true);
-  const [trips, setTrips] = useState<any[]>([]);
-
-  // Sample trips data - would be fetched from API in a real app
-  const sampleTrips = {
-    upcoming: [
-      {
-        id: "up1",
-        type: "hotel",
-        name: "Labadi Beach Hotel",
-        location: "Accra, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG90ZWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 8),
-        status: "confirmed",
-        paymentStatus: "paid",
-        bookingNumber: "HTL-2023-5692",
-        price: 350,
-        guests: 2,
-        roomType: "Deluxe Ocean View",
-      },
-      {
-        id: "up2",
-        type: "package",
-        name: "Kakum National Park Adventure",
-        location: "Cape Coast, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1544735716-392fe2489ffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGFmcmljYW4lMjBwYXJrfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 12),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14),
-        status: "pending",
-        paymentStatus: "partial",
-        bookingNumber: "PKG-2023-3421",
-        price: 220,
-        participants: 4,
-        packageDetails: "Canopy walkway, hiking, and wildlife safari",
-      },
-      {
-        id: "up3",
-        type: "vehicle",
-        name: "Toyota Land Cruiser",
-        location: "Kumasi, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dG95b3RhJTIwbGFuZCUyMGNydWlzZXJ8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 25),
-        status: "confirmed",
-        paymentStatus: "pending",
-        bookingNumber: "VEH-2023-7812",
-        price: 475,
-        vehicleDetails: "4x4, 7 Seater, Automatic",
-        licensePlate: "GR-5241-21",
-      },
-    ],
-    past: [
-      {
-        id: "past1",
-        type: "hotel",
-        name: "Kempinski Hotel",
-        location: "Accra, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG90ZWwlMjByb29tfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18),
-        status: "completed",
-        paymentStatus: "paid",
-        bookingNumber: "HTL-2023-4502",
-        price: 540,
-        guests: 2,
-        roomType: "Executive Suite",
-      },
-      {
-        id: "past2",
-        type: "vehicle",
-        name: "Hyundai Tucson",
-        location: "Accra, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1630490067641-969a68cf05d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aHl1bmRhaSUyMHR1Y3NvbnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 35),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 32),
-        status: "completed",
-        paymentStatus: "paid",
-        bookingNumber: "VEH-2023-6325",
-        price: 280,
-        vehicleDetails: "SUV, 5 Seater, Automatic",
-        licensePlate: "GE-7834-20",
-      },
-      {
-        id: "past3",
-        type: "package",
-        name: "Mole National Park Safari",
-        location: "Northern Region, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1516426122078-c23e76319801?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YWZyaWNhbiUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 57),
-        status: "completed",
-        paymentStatus: "paid",
-        bookingNumber: "PKG-2023-2198",
-        price: 650,
-        participants: 2,
-        packageDetails:
-          "Wildlife safari, guided tours, and premium accommodations",
-      },
-      {
-        id: "past4",
-        type: "hotel",
-        name: "Royal Senchi Resort",
-        location: "Akosombo, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cmVzb3J0JTIwcG9vbHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 87),
-        status: "completed",
-        paymentStatus: "paid",
-        bookingNumber: "HTL-2023-3325",
-        price: 420,
-        guests: 3,
-        roomType: "River View Suite",
-      },
-    ],
-    canceled: [
-      {
-        id: "can1",
-        type: "hotel",
-        name: "Elmina Beach Resort",
-        location: "Elmina, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGJlYWNoJTIwcmVzb3J0fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12),
-        status: "canceled",
-        paymentStatus: "refunded",
-        bookingNumber: "HTL-2023-5284",
-        price: 300,
-        guests: 2,
-        roomType: "Standard Ocean View",
-        cancellationReason: "Weather conditions",
-      },
-      {
-        id: "can2",
-        type: "package",
-        name: "Akosombo Dam Tour",
-        location: "Akosombo, Ghana",
-        image:
-          "https://images.unsplash.com/photo-1657468133236-f50c0cebb28f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGFtfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45),
-        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 44),
-        status: "canceled",
-        paymentStatus: "refunded",
-        bookingNumber: "PKG-2023-1854",
-        price: 120,
-        participants: 5,
-        packageDetails: "Guided dam tour and boat cruise",
-        cancellationReason: "Operational issues at the dam site",
-      },
-    ],
-  };
+  const [trips, setTrips] = useState<Booking[]>([]);
 
   useEffect(() => {
-    // In a real app, this would be fetching actual data from API
     if (auth?.token) {
       loadTrips();
+    } else {
+      setTrips([]);
+      setIsLoading(false);
     }
   }, [auth?.token, activeTab]);
 
   const loadTrips = async () => {
     setIsLoading(true);
     try {
-      // In a real app, we would fetch from API like this:
-      // const response = await getMyBookings(activeTab, "", "", auth?.token);
-      // setTrips(response.data);
+      const response = await getMyBookings(
+        activeTab,
+        undefined,
+        undefined,
+        auth?.token
+      );
 
-      // Using sample data for now
-      setTimeout(() => {
-        setTrips(sampleTrips[activeTab as keyof typeof sampleTrips]);
-        setIsLoading(false);
-      }, 1000);
+      if (response?.data?.data) {
+        setTrips(response.data.data);
+      } else {
+        // If the API endpoint isn't fully implemented yet, use sample data
+        setTrips(
+          getSampleTrips()[activeTab as keyof typeof getSampleTrips] || []
+        );
+      }
     } catch (error) {
       console.error("Error loading trips:", error);
-      setTrips([]);
+      // Fallback to sample data if API fails
+      setTrips(
+        getSampleTrips()[activeTab as keyof typeof getSampleTrips] || []
+      );
+      toast.show("Failed to load trips", { type: "error" });
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -222,7 +96,178 @@ export default function TripScreen() {
     loadTrips();
   };
 
-  const getStatusColor = (status: string, paymentStatus: string) => {
+  // Sample trips data as fallback
+  const getSampleTrips = () => ({
+    upcoming: [
+      {
+        _id: "up1",
+        type: "hotel",
+        name: "Labadi Beach Hotel",
+        location: "Accra, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG90ZWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 8).toISOString(),
+        status: "confirmed",
+        paymentStatus: "paid",
+        bookingNumber: "HTL-2023-5692",
+        price: 350,
+        details: {
+          guests: 2,
+          roomType: "Deluxe Ocean View",
+        },
+      },
+      {
+        _id: "up2",
+        type: "package",
+        name: "Kakum National Park Adventure",
+        location: "Cape Coast, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1544735716-392fe2489ffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGFmcmljYW4lMjBwYXJrfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() + 1000 * 60 * 60 * 24 * 12
+        ).toISOString(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
+        status: "pending",
+        paymentStatus: "partial",
+        bookingNumber: "PKG-2023-3421",
+        price: 220,
+        details: {
+          participants: 4,
+          packageDetails: "Canopy walkway, hiking, and wildlife safari",
+        },
+      },
+      {
+        _id: "up3",
+        type: "vehicle",
+        name: "Toyota Land Cruiser",
+        location: "Kumasi, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dG95b3RhJTIwbGFuZCUyMGNydWlzZXJ8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() + 1000 * 60 * 60 * 24 * 20
+        ).toISOString(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 25).toISOString(),
+        status: "confirmed",
+        paymentStatus: "pending",
+        bookingNumber: "VEH-2023-7812",
+        price: 475,
+        details: {
+          vehicleDetails: "4x4, 7 Seater, Automatic",
+          licensePlate: "GR-5241-21",
+        },
+      },
+    ],
+    past: [
+      {
+        _id: "past1",
+        type: "hotel",
+        name: "Kempinski Hotel",
+        location: "Accra, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG90ZWwlMjByb29tfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 20
+        ).toISOString(),
+        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+        status: "completed",
+        paymentStatus: "paid",
+        bookingNumber: "HTL-2023-4502",
+        price: 540,
+        details: {
+          guests: 2,
+          roomType: "Executive Suite",
+        },
+      },
+      {
+        _id: "past2",
+        type: "vehicle",
+        name: "Hyundai Tucson",
+        location: "Accra, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1630490067641-969a68cf05d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aHl1bmRhaSUyMHR1Y3NvbnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 35
+        ).toISOString(),
+        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 32).toISOString(),
+        status: "completed",
+        paymentStatus: "paid",
+        bookingNumber: "VEH-2023-6325",
+        price: 280,
+        details: {
+          vehicleDetails: "SUV, 5 Seater, Automatic",
+          licensePlate: "GE-7834-20",
+        },
+      },
+      {
+        _id: "past3",
+        type: "package",
+        name: "Mole National Park Safari",
+        location: "Northern Region, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1516426122078-c23e76319801?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YWZyaWNhbiUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 60
+        ).toISOString(),
+        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 57).toISOString(),
+        status: "completed",
+        paymentStatus: "paid",
+        bookingNumber: "PKG-2023-2198",
+        price: 650,
+        details: {
+          participants: 2,
+          packageDetails:
+            "Wildlife safari, guided tours, and premium accommodations",
+        },
+      },
+    ],
+    canceled: [
+      {
+        _id: "can1",
+        type: "hotel",
+        name: "Elmina Beach Resort",
+        location: "Elmina, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGJlYWNoJTIwcmVzb3J0fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 15
+        ).toISOString(),
+        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+        status: "canceled",
+        paymentStatus: "refunded",
+        bookingNumber: "HTL-2023-5284",
+        price: 300,
+        details: {
+          guests: 2,
+          roomType: "Standard Ocean View",
+        },
+        cancellationReason: "Weather conditions",
+      },
+      {
+        _id: "can2",
+        type: "package",
+        name: "Akosombo Dam Tour",
+        location: "Akosombo, Ghana",
+        image:
+          "https://images.unsplash.com/photo-1657468133236-f50c0cebb28f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGFtfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60",
+        startDate: new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 45
+        ).toISOString(),
+        endDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 44).toISOString(),
+        status: "canceled",
+        paymentStatus: "refunded",
+        bookingNumber: "PKG-2023-1854",
+        price: 120,
+        details: {
+          participants: 5,
+          packageDetails: "Guided dam tour and boat cruise",
+        },
+        cancellationReason: "Operational issues at the dam site",
+      },
+    ],
+  });
+
+  const getStatusColor = (status: string) => {
     if (status === "confirmed")
       return "bg-green-500/10 text-green-700 dark:text-green-400";
     if (status === "pending")
@@ -246,7 +291,8 @@ export default function TripScreen() {
     return "bg-slate-500/10 text-slate-700 dark:text-slate-400";
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -280,6 +326,16 @@ export default function TripScreen() {
       "+233245678901",
       `Hello, I need support for my booking ${bookingNumber}`
     );
+  };
+
+  const navigateToDetail = (item: Booking) => {
+    if (item.type === "hotel") {
+      router.push(`/booking-details?id=${item._id}&type=hotel`);
+    } else if (item.type === "vehicle") {
+      router.push(`/booking-details?id=${item._id}&type=vehicle`);
+    } else if (item.type === "package") {
+      router.push(`/booking-details?id=${item._id}&type=package`);
+    }
   };
 
   if (authLoading) {
@@ -439,7 +495,7 @@ export default function TripScreen() {
       ) : (
         <FlatList
           data={trips}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View className="h-4" />}
@@ -448,10 +504,7 @@ export default function TripScreen() {
           }
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => {
-                // Navigate to booking details
-                // router.push(`/booking-details?id=${item.id}`);
-              }}
+              onPress={() => navigateToDetail(item)}
               className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm"
             >
               {/* Image Header */}
@@ -517,39 +570,39 @@ export default function TripScreen() {
 
                 {/* Details by Type */}
                 <View className="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
-                  {item.type === "hotel" && (
+                  {item.type === "hotel" && item.details && (
                     <>
                       <View className="flex-row justify-between mb-2">
                         <ThemedText className="text-slate-500">Room</ThemedText>
-                        <ThemedText>{item.roomType}</ThemedText>
+                        <ThemedText>{item.details.roomType}</ThemedText>
                       </View>
                       <View className="flex-row justify-between">
                         <ThemedText className="text-slate-500">
                           Guests
                         </ThemedText>
-                        <ThemedText>{item.guests}</ThemedText>
+                        <ThemedText>{item.details.guests}</ThemedText>
                       </View>
                     </>
                   )}
 
-                  {item.type === "vehicle" && (
+                  {item.type === "vehicle" && item.details && (
                     <>
                       <View className="flex-row justify-between mb-2">
                         <ThemedText className="text-slate-500">
                           Vehicle
                         </ThemedText>
-                        <ThemedText>{item.vehicleDetails}</ThemedText>
+                        <ThemedText>{item.details.vehicleDetails}</ThemedText>
                       </View>
                       <View className="flex-row justify-between">
                         <ThemedText className="text-slate-500">
                           License
                         </ThemedText>
-                        <ThemedText>{item.licensePlate}</ThemedText>
+                        <ThemedText>{item.details.licensePlate}</ThemedText>
                       </View>
                     </>
                   )}
 
-                  {item.type === "package" && (
+                  {item.type === "package" && item.details && (
                     <>
                       <View className="flex-row justify-between mb-2">
                         <ThemedText className="text-slate-500">
@@ -559,14 +612,14 @@ export default function TripScreen() {
                           numberOfLines={1}
                           className="flex-1 text-right"
                         >
-                          {item.packageDetails}
+                          {item.details.packageDetails}
                         </ThemedText>
                       </View>
                       <View className="flex-row justify-between">
                         <ThemedText className="text-slate-500">
                           Participants
                         </ThemedText>
-                        <ThemedText>{item.participants}</ThemedText>
+                        <ThemedText>{item.details.participants}</ThemedText>
                       </View>
                     </>
                   )}
@@ -595,16 +648,11 @@ export default function TripScreen() {
                   <View className="flex-row space-x-2">
                     <View
                       className={`px-2 py-1 rounded-full ${
-                        getStatusColor(item.status, item.paymentStatus).split(
-                          " "
-                        )[0]
+                        getStatusColor(item.status).split(" ")[0]
                       }`}
                     >
                       <ThemedText
-                        className={`text-xs ${getStatusColor(
-                          item.status,
-                          item.paymentStatus
-                        )
+                        className={`text-xs ${getStatusColor(item.status)
                           .split(" ")
                           .slice(1)
                           .join(" ")}`}

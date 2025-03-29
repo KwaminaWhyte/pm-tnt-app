@@ -1,12 +1,13 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
   Pressable,
   ActivityIndicator,
   FlatList,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -15,86 +16,183 @@ import {
   FontAwesome6,
 } from "@expo/vector-icons";
 import { useColorScheme } from "react-native";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getMyNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from "@/data/api";
+import { useToast } from "react-native-toast-notifications";
+
+interface Notification {
+  _id: string;
+  type: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+}
 
 export default function Notifications() {
   const { auth } = useAuth();
   const colorScheme = useColorScheme();
-  const [isLoading, setIsLoading] = useState(false);
+  const toast = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Sample notifications data - would be fetched from API in a real app
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      type: "booking_confirmed",
-      title: "Booking Confirmed",
-      message: "Your hotel booking at Sunset Resort has been confirmed.",
-      date: new Date(Date.now() - 1000 * 60 * 30),
-      read: false,
-    },
-    {
-      id: "2",
-      type: "payment_success",
-      title: "Payment Successful",
-      message:
-        "Your payment of $245 for the Accra City Tour package was successful.",
-      date: new Date(Date.now() - 1000 * 60 * 60 * 3),
-      read: true,
-    },
-    {
-      id: "3",
-      type: "booking_reminder",
-      title: "Trip Tomorrow",
-      message:
-        "Reminder: Your trip to Cape Coast Castle is scheduled for tomorrow at 9:00 AM.",
-      date: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      read: false,
-    },
-    {
-      id: "4",
-      type: "special_offer",
-      title: "Special Offer",
-      message:
-        "Limited time offer: 25% off on all beach resort bookings this weekend!",
-      date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-      read: true,
-    },
-    {
-      id: "5",
-      type: "vehicle_ready",
-      title: "Vehicle Ready",
-      message:
-        "Your rental car (Toyota Camry, GR-2453-21) is ready for pickup.",
-      date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
-      read: true,
-    },
-    {
-      id: "6",
-      type: "booking_canceled",
-      title: "Booking Canceled",
-      message:
-        "Your booking for Elmina Beach Resort has been canceled as requested.",
-      date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-      read: true,
-    },
-    {
-      id: "7",
-      type: "welcome",
-      title: "Welcome to TNT Travel",
-      message:
-        "Thank you for choosing TNT Travel. Explore our services and find your next adventure!",
-      date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10),
-      read: true,
-    },
-  ]);
+  useEffect(() => {
+    if (auth?.token) {
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+      setIsLoading(false);
+    }
+  }, [auth?.token]);
 
-  const markAsRead = (id: string) => {
-    setNotifications(
-      notifications.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getMyNotifications(auth?.token);
+
+      if (response.data?.data) {
+        setNotifications(response.data.data);
+      } else {
+        // If API isn't implemented yet, use sample data
+        setNotifications(getSampleNotifications());
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      // If API fails, use sample data as fallback
+      setNotifications(getSampleNotifications());
+      toast.show("Failed to fetch notifications", { type: "error" });
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchNotifications();
+  };
+
+  // Sample data function for fallback if API isn't implemented
+  const getSampleNotifications = (): Notification[] => {
+    return [
+      {
+        _id: "1",
+        type: "booking_confirmed",
+        title: "Booking Confirmed",
+        message: "Your hotel booking at Sunset Resort has been confirmed.",
+        createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        read: false,
+      },
+      {
+        _id: "2",
+        type: "payment_success",
+        title: "Payment Successful",
+        message:
+          "Your payment of $245 for the Accra City Tour package was successful.",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+        read: true,
+      },
+      {
+        _id: "3",
+        type: "booking_reminder",
+        title: "Trip Tomorrow",
+        message:
+          "Reminder: Your trip to Cape Coast Castle is scheduled for tomorrow at 9:00 AM.",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        read: false,
+      },
+      {
+        _id: "4",
+        type: "special_offer",
+        title: "Special Offer",
+        message:
+          "Limited time offer: 25% off on all beach resort bookings this weekend!",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+        read: true,
+      },
+      {
+        _id: "5",
+        type: "vehicle_ready",
+        title: "Vehicle Ready",
+        message:
+          "Your rental car (Toyota Camry, GR-2453-21) is ready for pickup.",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+        read: true,
+      },
+      {
+        _id: "6",
+        type: "booking_canceled",
+        title: "Booking Canceled",
+        message:
+          "Your booking for Elmina Beach Resort has been canceled as requested.",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+        read: true,
+      },
+      {
+        _id: "7",
+        type: "welcome",
+        title: "Welcome to TNT Travel",
+        message:
+          "Thank you for choosing TNT Travel. Explore our services and find your next adventure!",
+        createdAt: new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 10
+        ).toISOString(),
+        read: true,
+      },
+    ];
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await markNotificationAsRead(id, auth?.token);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) =>
+          notification._id === id
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+
+      // Optimistic UI update even if the API fails
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) =>
+          notification._id === id
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead(auth?.token);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+      toast.show("All notifications marked as read", { type: "success" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+
+      // Optimistic UI update even if the API fails
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -144,7 +242,8 @@ export default function Notifications() {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffSec = Math.round(diffMs / 1000);
@@ -159,40 +258,50 @@ export default function Notifications() {
     return date.toLocaleDateString();
   };
 
-  const markAllAsRead = () => {
-    setNotifications(
-      notifications.map((notification) => ({ ...notification, read: true }))
-    );
-  };
-
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  if (!auth?.token) {
+    return (
+      <SafeAreaView className="flex-1 bg-white dark:bg-slate-900 items-center justify-center p-6">
+        <MaterialCommunityIcons
+          name="bell-off"
+          size={64}
+          color={colorScheme === "dark" ? "#64748b" : "#94a3b8"}
+        />
+        <ThemedText className="text-xl font-lexend-medium text-center mt-6">
+          Sign in to view notifications
+        </ThemedText>
+        <ThemedText className="text-slate-500 text-center mt-2 mb-6">
+          Stay updated with booking confirmations and special offers
+        </ThemedText>
+        <Pressable
+          onPress={() => router.push("/sign-in")}
+          className="bg-yellow-500 w-full py-3 rounded-xl items-center"
+        >
+          <ThemedText className="text-white font-lexend-medium">
+            Sign In
+          </ThemedText>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-slate-900">
-      {/* Header */}
-      {/* <View className="px-4 py-3 flex-row justify-between items-center border-b border-slate-200 dark:border-slate-800">
-        <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3">
-            <FontAwesome6
-              name="chevron-left"
-              size={18}
-              color={colorScheme === "dark" ? "#fff" : "#000"}
-            />
-          </Pressable>
-          <ThemedText className="text-xl font-lexend-medium">
-            Notifications
-          </ThemedText>
-        </View>
-
-        {unreadCount > 0 && (
-          <Pressable
-            onPress={markAllAsRead}
-            className="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full"
-          >
-            <ThemedText className="text-xs">Mark all as read</ThemedText>
-          </Pressable>
-        )}
-      </View> */}
+      <Stack.Screen
+        options={{
+          title: "Notifications",
+          headerRight: () =>
+            unreadCount > 0 ? (
+              <Pressable
+                onPress={handleMarkAllAsRead}
+                className="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full mr-4"
+              >
+                <ThemedText className="text-xs">Mark all as read</ThemedText>
+              </Pressable>
+            ) : null,
+        }}
+      />
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -217,12 +326,15 @@ export default function Notifications() {
       ) : (
         <FlatList
           data={notifications}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: 12 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           ItemSeparatorComponent={() => <View className="h-2" />}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => markAsRead(item.id)}
+              onPress={() => handleMarkAsRead(item._id)}
               className={`p-4 rounded-xl ${
                 item.read
                   ? "bg-white dark:bg-slate-800"
@@ -237,7 +349,7 @@ export default function Notifications() {
                       {item.title}
                     </ThemedText>
                     <ThemedText className="text-xs text-slate-500">
-                      {formatDate(item.date)}
+                      {formatDate(item.createdAt)}
                     </ThemedText>
                   </View>
                   <ThemedText className="mt-1 text-slate-600 dark:text-slate-400">

@@ -76,17 +76,133 @@ export const getPackages = async (params?: Record<string, any>) => {
   return api.get("/packages", { params });
 };
 
-// Bookings APIs
-export const getMyBookings = async (
-  bookingType: string,
-  status: string,
-  paymentStatus: string,
-  token: string
+// PACKAGE BOOKING
+interface PackageBookingData {
+  packageId: string;
+  startDate: string;
+  participants: number;
+  specialRequests?: string;
+}
+
+export const bookPackage = async (
+  bookingData: PackageBookingData,
+  token?: string
 ) => {
-  const api = createApiInstance(token);
-  return api.get(
-    `/bookings/my-bookings?bookingType=${bookingType}&status=${status}&paymentStatus=${paymentStatus}`
-  );
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await axios.post(
+      `${BASE_URL}/bookings/packages`,
+      bookingData,
+      { headers }
+    );
+    return response;
+  } catch (error) {
+    console.error("Error booking package:", error);
+    throw error;
+  }
+};
+
+// GET MY BOOKINGS
+export const getMyBookings = async (
+  status: string = "upcoming",
+  startDate?: string,
+  endDate?: string,
+  token?: string
+) => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    let url = `${BASE_URL}/bookings/my-bookings?status=${status}`;
+    if (startDate) url += `&startDate=${startDate}`;
+    if (endDate) url += `&endDate=${endDate}`;
+
+    const response = await axios.get(url, { headers });
+    return response;
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    throw error;
+  }
+};
+
+// GET MY NOTIFICATIONS
+export const getMyNotifications = async (token?: string) => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await axios.get(`${BASE_URL}/notifications`, { headers });
+    return response;
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    throw error;
+  }
+};
+
+// MARK NOTIFICATION AS READ
+export const markNotificationAsRead = async (
+  notificationId: string,
+  token?: string
+) => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await axios.patch(
+      `${BASE_URL}/notifications/${notificationId}/read`,
+      {},
+      { headers }
+    );
+    return response;
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    throw error;
+  }
+};
+
+// MARK ALL NOTIFICATIONS AS READ
+export const markAllNotificationsAsRead = async (token?: string) => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await axios.patch(
+      `${BASE_URL}/notifications/mark-all-read`,
+      {},
+      { headers }
+    );
+    return response;
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    throw error;
+  }
 };
 
 // WhatsApp Chat

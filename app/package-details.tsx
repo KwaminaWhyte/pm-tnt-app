@@ -1,4 +1,13 @@
-import { View, ScrollView, Image, Pressable } from "react-native";
+import {
+  View,
+  ScrollView,
+  Image,
+  Pressable,
+  Modal,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+} from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Stack, useGlobalSearchParams, router } from "expo-router";
@@ -8,16 +17,179 @@ import { fetcher } from "@/data/fetcher";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FontAwesome6 } from "@expo/vector-icons";
 import moment from "moment";
+import { useState } from "react";
+import { useToast } from "react-native-toast-notifications";
+import { useAuth } from "@/context/AuthContext";
+import { BASE_URL, bookPackage } from "@/data/api";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 export default function PackageDetailsScreen() {
   const { id } = useGlobalSearchParams();
   const { top } = useSafeAreaInsets();
-  const baseUrl =
-    "http://i48g4kck48ksow4ssowws4go.138.68.103.18.sslip.io/api/v1";
+  const { auth } = useAuth();
+  const toast = useToast();
 
-  const { data, isLoading } = useSWR(`${baseUrl}/packages/${id}`, fetcher());
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [participants, setParticipants] = useState(1);
+  const [specialRequests, setSpecialRequests] = useState("");
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  const { data, isLoading, error } = useSWR(
+    `${BASE_URL}/packages/${id}`,
+    fetcher(auth?.token)
+  );
 
   const package_data = data?.data;
+
+  const showDatePicker = () => {
+    setDatePickerVisible(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisible(false);
+  };
+
+  const handleConfirmDate = (date: Date) => {
+    setSelectedDate(date);
+    hideDatePicker();
+  };
+
+  const getMinDate = () => {
+    const today = new Date();
+    today.setDate(today.getDate() + 1); // Minimum booking is tomorrow
+    return today;
+  };
+
+  const getMaxDate = () => {
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 6); // Maximum booking is 6 months ahead
+    return maxDate;
+  };
+
+  const handleIncrementParticipants = () => {
+    if (
+      package_data?.maxParticipants &&
+      participants >= package_data.maxParticipants
+    ) {
+      toast.show(
+        `Maximum ${package_data.maxParticipants} participants allowed`,
+        { type: "warning" }
+      );
+      return;
+    }
+    setParticipants((prev) => prev + 1);
+  };
+
+  const handleDecrementParticipants = () => {
+    if (
+      package_data?.minParticipants &&
+      participants <= package_data.minParticipants
+    ) {
+      toast.show(
+        `Minimum ${package_data.minParticipants} participants required`,
+        { type: "warning" }
+      );
+      return;
+    }
+    if (participants > 1) {
+      setParticipants((prev) => prev - 1);
+    }
+  };
+
+  const openBookingModal = () => {
+    if (!auth?.token) {
+      toast.show("Please sign in to book a package", { type: "warning" });
+      router.push("/sign-in");
+      return;
+    }
+    setBookingModalVisible(true);
+  };
+
+  const handleBookPackage = async () => {
+    if (!selectedDate) {
+      toast.show("Please select a date", { type: "warning" });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const bookingData = {
+        packageId: String(id),
+        startDate: selectedDate.toISOString(),
+        participants,
+        specialRequests:
+          specialRequests.trim().length > 0 ? specialRequests : undefined,
+      };
+
+      const response = await bookPackage(bookingData, auth?.token);
+
+      setBookingModalVisible(false);
+      toast.show("Booking successful!", { type: "success" });
+      router.push("/trip?category=upcoming");
+    } catch (error: any) {
+      console.error("Booking error:", error);
+      toast.show(error.response?.data?.message || "Failed to book package", {
+        type: "error",
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const calculateTotalPrice = () => {
+    if (!package_data) return 0;
+
+    // Apply seasonal pricing if applicable
+    let priceMultiplier = 1;
+    if (
+      selectedDate &&
+      package_data.seasonalPricing &&
+      package_data.seasonalPricing.length > 0
+    ) {
+      const applicableSeason = package_data.seasonalPricing.find(
+        (season: any) => {
+          const startDate = new Date(season.startDate);
+          const endDate = new Date(season.endDate);
+          return selectedDate >= startDate && selectedDate <= endDate;
+        }
+      );
+
+      if (applicableSeason) {
+        priceMultiplier = applicableSeason.priceMultiplier;
+      }
+    }
+
+    return (package_data.price * participants * priceMultiplier).toFixed(2);
+  };
+
+  if (isLoading) {
+    return (
+      <ThemedView className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#eab308" />
+        <ThemedText className="mt-4">Loading package details...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  if (error || !package_data) {
+    return (
+      <ThemedView className="flex-1 items-center justify-center">
+        <MaterialCommunityIcons name="alert-circle" size={48} color="#ef4444" />
+        <ThemedText className="mt-4 text-lg">
+          Failed to load package details
+        </ThemedText>
+        <Pressable
+          onPress={() => router.back()}
+          className="mt-6 bg-yellow-500 px-6 py-3 rounded-xl"
+        >
+          <ThemedText className="text-white font-semibold">Go Back</ThemedText>
+        </Pressable>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView
@@ -319,10 +491,189 @@ export default function PackageDetailsScreen() {
 
       {/* Bottom CTA */}
       <View className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <Pressable className="bg-yellow-500 py-4 rounded-lg items-center">
-          <ThemedText className="font-semibold">Book Now</ThemedText>
+        <Pressable
+          className="bg-yellow-500 py-4 rounded-lg items-center"
+          onPress={openBookingModal}
+          disabled={isBooking}
+        >
+          {isBooking ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <ThemedText className="font-semibold text-white">
+              Book Now
+            </ThemedText>
+          )}
         </Pressable>
       </View>
+
+      {/* Booking Modal */}
+      <Modal
+        visible={bookingModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setBookingModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white dark:bg-slate-900 rounded-t-3xl p-5">
+            <View className="flex-row justify-between items-center mb-6">
+              <ThemedText className="text-xl font-semibold">
+                Book Package
+              </ThemedText>
+              <Pressable onPress={() => setBookingModalVisible(false)}>
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color="#64748b"
+                />
+              </Pressable>
+            </View>
+
+            {/* Package Name */}
+            <ThemedText className="text-lg font-bold mb-4">
+              {package_data.name}
+            </ThemedText>
+
+            {/* Date Selection */}
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">Start Date</ThemedText>
+              <Pressable
+                onPress={showDatePicker}
+                className="p-3 border border-slate-300 dark:border-slate-700 rounded-lg flex-row justify-between items-center"
+              >
+                <ThemedText>
+                  {selectedDate
+                    ? moment(selectedDate).format("MMM D, YYYY")
+                    : "Select a date"}
+                </ThemedText>
+                <MaterialCommunityIcons
+                  name="calendar"
+                  size={20}
+                  color="#64748b"
+                />
+              </Pressable>
+            </View>
+
+            {/* Participants Selection */}
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">
+                Number of Participants
+              </ThemedText>
+              <View className="flex-row items-center">
+                <Pressable
+                  onPress={handleDecrementParticipants}
+                  className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg items-center justify-center"
+                >
+                  <MaterialCommunityIcons
+                    name="minus"
+                    size={24}
+                    color="#64748b"
+                  />
+                </Pressable>
+                <ThemedText className="mx-4 text-lg font-semibold">
+                  {participants}
+                </ThemedText>
+                <Pressable
+                  onPress={handleIncrementParticipants}
+                  className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg items-center justify-center"
+                >
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={24}
+                    color="#64748b"
+                  />
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Special Requests */}
+            <View className="mb-6">
+              <ThemedText className="mb-2 font-medium">
+                Special Requests (optional)
+              </ThemedText>
+              <TextInput
+                multiline
+                numberOfLines={3}
+                value={specialRequests}
+                onChangeText={setSpecialRequests}
+                placeholder="Any special requirements or preferences..."
+                placeholderTextColor="#9ca3af"
+                className="p-3 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+                style={{ textAlignVertical: "top" }}
+              />
+            </View>
+
+            {/* Price Summary */}
+            <View className="mb-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+              <View className="flex-row justify-between mb-2">
+                <ThemedText>Base Price</ThemedText>
+                <ThemedText>${package_data.price}</ThemedText>
+              </View>
+              <View className="flex-row justify-between mb-2">
+                <ThemedText>Participants</ThemedText>
+                <ThemedText>× {participants}</ThemedText>
+              </View>
+              {selectedDate &&
+                package_data.seasonalPricing &&
+                package_data.seasonalPricing.length > 0 &&
+                (() => {
+                  const applicableSeason = package_data.seasonalPricing.find(
+                    (season: any) => {
+                      const startDate = new Date(season.startDate);
+                      const endDate = new Date(season.endDate);
+                      return (
+                        selectedDate >= startDate && selectedDate <= endDate
+                      );
+                    }
+                  );
+
+                  if (applicableSeason) {
+                    return (
+                      <View className="flex-row justify-between mb-2">
+                        <ThemedText>Seasonal Price</ThemedText>
+                        <ThemedText>
+                          × {applicableSeason.priceMultiplier}
+                        </ThemedText>
+                      </View>
+                    );
+                  }
+                  return null;
+                })()}
+              <View className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <View className="flex-row justify-between">
+                  <ThemedText className="font-semibold">Total</ThemedText>
+                  <ThemedText className="font-bold text-yellow-500">
+                    ${calculateTotalPrice()}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+
+            {/* Book Button */}
+            <Pressable
+              className="bg-yellow-500 py-4 rounded-lg items-center"
+              onPress={handleBookPackage}
+              disabled={processing || !selectedDate}
+            >
+              {processing ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <ThemedText className="font-semibold text-white">
+                  Confirm & Pay ${calculateTotalPrice()}
+                </ThemedText>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={handleConfirmDate}
+        onCancel={hideDatePicker}
+        minimumDate={getMinDate()}
+        maximumDate={getMaxDate()}
+      />
     </ThemedView>
   );
 }
