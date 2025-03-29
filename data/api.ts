@@ -301,8 +301,90 @@ export const getPackageTemplateById = async (id: string, token?: string) => {
   }
 };
 
+// Define types for package template
+export interface PackageTemplateData {
+  name: string;
+  description?: string;
+  basePackageId: string;
+  customizations: {
+    accommodations?: {
+      hotelIds?: string[];
+      preferences?: {
+        roomTypes?: string[];
+        amenities?: string[];
+        boardBasis?: string[];
+        location?: string[];
+      };
+    };
+    transportation?: {
+      type?: "Flight" | "Train" | "Bus" | "Private Car" | "None";
+      preferences?: {
+        class?: string;
+        seatingPreference?: string;
+        specialAssistance?: string[];
+        luggageOptions?: string[];
+      };
+    };
+    activities?: {
+      included?: string[];
+      excluded?: string[];
+      preferences?: {
+        difficulty?: string[];
+        duration?: string[];
+        type?: string[];
+        timeOfDay?: string[];
+      };
+    };
+    meals?: {
+      included?: {
+        breakfast?: boolean;
+        lunch?: boolean;
+        dinner?: boolean;
+      };
+      preferences?: {
+        dietary?: string[];
+        cuisine?: string[];
+        mealTimes?: {
+          breakfast?: string;
+          lunch?: string;
+          dinner?: string;
+        };
+      };
+    };
+    itinerary?: {
+      pace?: "Relaxed" | "Moderate" | "Fast";
+      flexibility?: "Fixed" | "Flexible" | "Very Flexible";
+      focusAreas?: string[];
+      customDays?: Array<{
+        day: number;
+        title: string;
+        description: string;
+        activities: string[];
+        meals?: {
+          breakfast?: string;
+          lunch?: string;
+          dinner?: string;
+        };
+      }>;
+    };
+    accessibility?: {
+      wheelchairAccess?: boolean;
+      mobilityAssistance?: boolean;
+      dietaryRestrictions?: string[];
+      medicalRequirements?: string[];
+    };
+    budget?: {
+      maxBudget?: number;
+      priorityAreas?: string[];
+      flexibleAreas?: string[];
+    };
+  };
+  isPublic?: boolean;
+  tags?: string[];
+}
+
 export const createPackageTemplate = async (
-  templateData: any,
+  templateData: PackageTemplateData,
   token?: string
 ) => {
   try {
@@ -322,7 +404,7 @@ export const createPackageTemplate = async (
 
 export const updatePackageTemplate = async (
   id: string,
-  templateData: any,
+  templateData: Partial<PackageTemplateData>,
   token?: string
 ) => {
   try {

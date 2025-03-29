@@ -11,27 +11,49 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuth } from "@/context/AuthContext";
-import { getPackages, createPackageTemplate } from "@/data/api";
+import {
+  getPackages,
+  createPackageTemplate,
+  PackageTemplateData,
+} from "@/data/api";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import PackageSelector from "@/components/PackageSelector";
 import { Input } from "@/components/ui/input";
 
+// Define types for package
+interface PackageType {
+  _id: string;
+  name: string;
+  description?: string;
+  images?: string[];
+  duration?: {
+    days: number;
+    nights: number;
+  };
+  price?: number;
+  maxParticipants?: number;
+  status?: string;
+}
+
 export default function CreatePackageTemplate() {
   const { auth } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [packages, setPackages] = useState([]);
-  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [packages, setPackages] = useState<PackageType[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<PackageType | null>(
+    null
+  );
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PackageTemplateData>({
     name: "",
     description: "",
     basePackageId: "",
     customizations: {
       accommodations: {
+        hotelIds: [],
         preferences: {
           roomTypes: [],
           amenities: [],
@@ -55,6 +77,7 @@ export default function CreatePackageTemplate() {
       },
     },
     isPublic: false,
+    tags: [],
   });
 
   useEffect(() => {
@@ -84,7 +107,7 @@ export default function CreatePackageTemplate() {
     }
   }, [auth?.token]);
 
-  const handleSelectPackage = (pkg) => {
+  const handleSelectPackage = (pkg: PackageType) => {
     setSelectedPackage(pkg);
     setFormData((prev) => ({
       ...prev,
@@ -92,7 +115,7 @@ export default function CreatePackageTemplate() {
     }));
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof PackageTemplateData, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -123,7 +146,7 @@ export default function CreatePackageTemplate() {
 
       // Navigate to edit template screen
       router.push(`/package-template/${response._id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating package template:", error);
       Toast.show({
         type: "error",
@@ -169,7 +192,6 @@ export default function CreatePackageTemplate() {
             value={formData.name}
             onChangeText={(text) => handleInputChange("name", text)}
             placeholder="Enter a name for your custom package"
-            // errorMessage={errors.email}
           />
 
           <ThemedText style={styles.label}>Description</ThemedText>
@@ -181,6 +203,23 @@ export default function CreatePackageTemplate() {
             placeholderTextColor={Colors.gray[400]}
             multiline
             numberOfLines={4}
+          />
+
+          <ThemedText style={styles.label}>Tags (comma separated)</ThemedText>
+          <TextInput
+            style={styles.input}
+            value={formData.tags?.join(", ") || ""}
+            onChangeText={(text) =>
+              handleInputChange(
+                "tags",
+                text
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter((tag) => tag)
+              )
+            }
+            placeholder="family, beach, adventure"
+            placeholderTextColor={Colors.gray[400]}
           />
 
           <View style={styles.checkboxContainer}>
@@ -266,7 +305,7 @@ const styles = StyleSheet.create({
   },
   sectionDescription: {
     fontSize: 14,
-    color: Colors.gray[500],
+    color: Colors.gray[400],
     marginBottom: 16,
   },
   label: {
@@ -276,7 +315,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.gray[300],
+    borderColor: Colors.gray[400],
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -329,11 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginTop: 8,
-    color: Colors.gray[500],
+    color: Colors.gray[400],
   },
   footer: {
     fontSize: 12,
-    color: Colors.gray[500],
+    color: Colors.gray[400],
     marginBottom: 24,
     marginLeft: 16,
   },
