@@ -4,15 +4,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { styles } from "./styles";
-
-type PaceType = "relaxed" | "moderate" | "fast";
+import { PaceType, FlexibilityType } from "@/types/package-template";
 
 interface ItinerarySectionProps {
   formData: {
     customizations: {
       itinerary?: {
         pace?: PaceType;
-        flexibility?: string;
+        flexibility?: FlexibilityType;
         focusAreas?: string[];
         dayRequirements?: string[];
       };
@@ -26,16 +25,16 @@ export const ItinerarySection: React.FC<ItinerarySectionProps> = ({
   onUpdateItinerary,
 }) => {
   const itinerary = formData.customizations.itinerary || {
-    pace: "moderate",
-    flexibility: "",
+    pace: "Moderate",
+    flexibility: "Flexible",
     focusAreas: [],
     dayRequirements: [],
   };
 
   const paceOptions: Array<{ key: PaceType; label: string }> = [
-    { key: "relaxed", label: "Relaxed" },
-    { key: "moderate", label: "Moderate" },
-    { key: "fast", label: "Fast" },
+    { key: "Relaxed", label: "Relaxed" },
+    { key: "Moderate", label: "Moderate" },
+    { key: "Fast", label: "Fast" },
   ];
 
   return (
@@ -76,18 +75,36 @@ export const ItinerarySection: React.FC<ItinerarySectionProps> = ({
 
       {/* Schedule Flexibility */}
       <ThemedText style={styles.label}>Schedule Flexibility</ThemedText>
-      <TextInput
-        style={styles.input}
-        value={itinerary.flexibility}
-        onChangeText={(text) => {
-          onUpdateItinerary({
-            ...itinerary,
-            flexibility: text,
-          });
-        }}
-        placeholder="e.g., Flexible with morning activities, fixed dinner times"
-        placeholderTextColor={Colors.gray[400]}
-      />
+      <View style={styles.buttonContainer}>
+        {[
+          { key: "Fixed", label: "Fixed" },
+          { key: "Flexible", label: "Flexible" },
+          { key: "Very Flexible", label: "Very Flexible" },
+        ].map(({ key, label }) => (
+          <TouchableOpacity
+            key={key}
+            style={[
+              styles.button,
+              itinerary.flexibility === key && styles.buttonActive,
+            ]}
+            onPress={() => {
+              onUpdateItinerary({
+                ...itinerary,
+                flexibility: key,
+              });
+            }}
+          >
+            <ThemedText
+              style={[
+                styles.buttonText,
+                itinerary.flexibility === key && styles.buttonTextActive,
+              ]}
+            >
+              {label}
+            </ThemedText>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* Focus Areas */}
       <ThemedText style={styles.label}>Focus Areas</ThemedText>

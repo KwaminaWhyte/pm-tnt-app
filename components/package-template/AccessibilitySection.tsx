@@ -4,30 +4,38 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { styles } from "./styles";
+import { CustomizationsType } from "@/types/package-template";
 
 interface AccessibilitySectionProps {
   formData: {
     customizations: {
-      accessibility?: {
-        wheelchairAccess?: boolean;
-        mobilityAssistance?: string[];
-        dietaryRestrictions?: string[];
-        medicalRequirements?: string[];
-      };
+      accessibility?: CustomizationsType["accessibility"];
     };
   };
-  onUpdateAccessibility: (accessibility: any) => void;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   formData,
-  onUpdateAccessibility,
+  setFormData,
 }) => {
   const accessibility = formData.customizations.accessibility || {
     wheelchairAccess: false,
-    mobilityAssistance: [],
+    mobilityAssistance: false,
     dietaryRestrictions: [],
     medicalRequirements: [],
+  };
+
+  const updateAccessibility = (
+    newAccessibility: CustomizationsType["accessibility"]
+  ) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      customizations: {
+        ...prev.customizations,
+        accessibility: newAccessibility,
+      },
+    }));
   };
 
   return (
@@ -45,7 +53,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
             accessibility.wheelchairAccess && styles.checkboxActive,
           ]}
           onPress={() => {
-            onUpdateAccessibility({
+            updateAccessibility({
               ...accessibility,
               wheelchairAccess: !accessibility.wheelchairAccess,
             });
@@ -61,23 +69,27 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
       </View>
 
       {/* Mobility Assistance */}
-      <ThemedText style={styles.label}>Mobility Assistance</ThemedText>
-      <TextInput
-        style={styles.input}
-        value={accessibility.mobilityAssistance?.join(", ")}
-        onChangeText={(text) => {
-          const mobilityAssistance = text
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean);
-          onUpdateAccessibility({
-            ...accessibility,
-            mobilityAssistance,
-          });
-        }}
-        placeholder="Walking aid, Elevator access, etc."
-        placeholderTextColor={Colors.gray[400]}
-      />
+      <View style={styles.checkboxContainer}>
+        <TouchableOpacity
+          style={[
+            styles.checkbox,
+            accessibility.mobilityAssistance && styles.checkboxActive,
+          ]}
+          onPress={() => {
+            updateAccessibility({
+              ...accessibility,
+              mobilityAssistance: !accessibility.mobilityAssistance,
+            });
+          }}
+        >
+          {accessibility.mobilityAssistance && (
+            <ThemedText style={styles.checkmark}>✓</ThemedText>
+          )}
+        </TouchableOpacity>
+        <ThemedText style={styles.checkboxLabel}>
+          Mobility Assistance Required
+        </ThemedText>
+      </View>
 
       {/* Dietary Restrictions */}
       <ThemedText style={styles.label}>Dietary Restrictions</ThemedText>
@@ -89,7 +101,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean);
-          onUpdateAccessibility({
+          updateAccessibility({
             ...accessibility,
             dietaryRestrictions,
           });
@@ -105,7 +117,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
         value={accessibility.medicalRequirements?.join("\n")}
         onChangeText={(text) => {
           const medicalRequirements = text.split("\n").filter(Boolean);
-          onUpdateAccessibility({
+          updateAccessibility({
             ...accessibility,
             medicalRequirements,
           });

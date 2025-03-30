@@ -41,7 +41,23 @@ export const styles = StyleSheet.create({
     marginVertical: 8,
   },
   checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: Colors.gray[400],
+    borderRadius: 4,
     marginRight: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  checkmark: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   checkboxLabel: {
     fontSize: 14,
@@ -71,5 +87,9 @@ export const styles = StyleSheet.create({
   buttonTextActive: {
     color: "white",
     fontWeight: "bold",
+  },
+  multilineInput: {
+    minHeight: 100,
+    textAlignVertical: "top",
   },
 });

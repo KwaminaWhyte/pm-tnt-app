@@ -395,6 +395,8 @@ export const createPackageTemplate = async (
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       }
     );
+    console.log("response", response.data);
+
     return response.data.data;
   } catch (error) {
     console.error("Error creating package template:", error);

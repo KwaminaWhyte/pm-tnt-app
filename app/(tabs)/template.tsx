@@ -16,36 +16,92 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 
-const PackageTemplateItem = ({ item, onPress }) => {
+// Define icon types
+type StatusIconName =
+  | "time-outline"
+  | "hourglass-outline"
+  | "checkmark-circle-outline"
+  | "close-circle-outline"
+  | "globe-outline";
+
+// Define extended colors
+const ExtendedColors = {
+  ...Colors,
+  white: "#FFFFFF",
+  yellow: {
+    100: "#FFF9DB",
+    500: "#EAB308",
+  },
+  blue: {
+    100: "#EBF8FF",
+    500: "#3182CE",
+  },
+  green: {
+    100: "#F0FFF4",
+    500: "#48BB78",
+  },
+  red: {
+    100: "#FED7D7",
+    500: "#E53E3E",
+  },
+  purple: {
+    100: "#FAF5FF",
+    500: "#805AD5",
+  },
+};
+
+interface PackageTemplate {
+  _id: string;
+  name: string;
+  status?: "Pending" | "InReview" | "Approved" | "Rejected" | "Published";
+  basePackageId?: {
+    name: string;
+  };
+  updatedAt?: string;
+  isPublic?: boolean;
+}
+
+interface PackageTemplateItemProps {
+  item: PackageTemplate;
+  onPress: () => void;
+}
+
+const PackageTemplateItem: React.FC<PackageTemplateItemProps> = ({
+  item,
+  onPress,
+}) => {
+  if (!item) return null;
+
   const statusColors = {
     Pending: {
-      color: Colors.yellow[500],
-      bgColor: Colors.yellow[100],
-      icon: "time-outline",
+      color: ExtendedColors.yellow[500],
+      bgColor: ExtendedColors.yellow[100],
+      icon: "time-outline" as StatusIconName,
     },
     InReview: {
-      color: Colors.blue[500],
-      bgColor: Colors.blue[100],
-      icon: "hourglass-outline",
+      color: ExtendedColors.blue[500],
+      bgColor: ExtendedColors.blue[100],
+      icon: "hourglass-outline" as StatusIconName,
     },
     Approved: {
-      color: Colors.green[500],
-      bgColor: Colors.green[100],
-      icon: "checkmark-circle-outline",
+      color: ExtendedColors.green[500],
+      bgColor: ExtendedColors.green[100],
+      icon: "checkmark-circle-outline" as StatusIconName,
     },
     Rejected: {
-      color: Colors.red[500],
-      bgColor: Colors.red[100],
-      icon: "close-circle-outline",
+      color: ExtendedColors.red[500],
+      bgColor: ExtendedColors.red[100],
+      icon: "close-circle-outline" as StatusIconName,
     },
     Published: {
-      color: Colors.purple[500],
-      bgColor: Colors.purple[100],
-      icon: "globe-outline",
+      color: ExtendedColors.purple[500],
+      bgColor: ExtendedColors.purple[100],
+      icon: "globe-outline" as StatusIconName,
     },
   };
 
-  const statusStyle = statusColors[item.status] || statusColors.Pending;
+  const status = item.status || "Pending";
+  const statusStyle = statusColors[status];
 
   return (
     <TouchableOpacity style={styles.templateItem} onPress={onPress}>
@@ -62,7 +118,7 @@ const PackageTemplateItem = ({ item, onPress }) => {
             color={statusStyle.color}
           />
           <ThemedText style={[styles.statusText, { color: statusStyle.color }]}>
-            {item.status}
+            {status}
           </ThemedText>
         </View>
       </View>
@@ -118,7 +174,7 @@ export default function PackageTemplateListScreen() {
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [templates, setTemplates] = useState([]);
+  const [templates, setTemplates] = useState<PackageTemplate[]>([]);
 
   useEffect(() => {
     fetchTemplates();
@@ -131,12 +187,12 @@ export default function PackageTemplateListScreen() {
       setLoading(true);
       const data = await getMyPackageTemplates(auth?.token);
       setTemplates(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching templates:", error);
       Toast.show({
         type: "error",
         text1: "Failed to load templates",
-        text2: "Please try again later",
+        text2: error.message || "Please try again later",
       });
     } finally {
       setLoading(false);
@@ -144,7 +200,7 @@ export default function PackageTemplateListScreen() {
   };
 
   const handleRefresh = async () => {
-    // setRefreshing(true);
+    setRefreshing(true);
     await fetchTemplates();
     setRefreshing(false);
   };
@@ -160,7 +216,7 @@ export default function PackageTemplateListScreen() {
         style={styles.createButton}
         onPress={() => router.push("/package-template/create")}
       >
-        <Ionicons name="add" size={20} color={Colors.white} />
+        <Ionicons name="add" size={20} color={ExtendedColors.white} />
         <ThemedText style={styles.createButtonText}>Create Template</ThemedText>
       </TouchableOpacity>
     </View>
@@ -321,7 +377,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   createButtonText: {
-    color: Colors.white,
+    color: ExtendedColors.white,
     fontWeight: "bold",
     marginLeft: 8,
   },

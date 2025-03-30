@@ -25,87 +25,27 @@ import { ActivitiesSection } from "@/components/package-template/ActivitiesSecti
 import { MealsSection } from "@/components/package-template/MealsSection";
 import { ItinerarySection } from "@/components/package-template/ItinerarySection";
 import { AccessibilitySection } from "@/components/package-template/AccessibilitySection";
+import { TransportationSection } from "@/components/package-template/TransportationSection";
+import { BudgetSection } from "@/components/package-template/BudgetSection";
+import {
+  PackageType,
+  CustomizationsType,
+  FormData as PackageFormData,
+  PaceType,
+  FlexibilityType,
+  ActivitiesType,
+} from "@/types/package-template";
 
-// Define types for package
-interface PackageType {
-  _id: string;
+interface FormData {
   name: string;
-  description?: string;
-  images?: string[];
-  duration?: {
-    days: number;
-    nights: number;
-  };
-  price?: number;
-  maxParticipants?: number;
-  status?: string;
+  description: string;
+  basePackageId: string;
+  customizations: Required<CustomizationsType>;
+  isPublic: boolean;
+  tags: string[];
 }
 
-interface CustomizationsType {
-  accommodations: {
-    hotelIds: string[];
-    preferences: {
-      roomTypes: string[];
-      amenities: string[];
-      boardBasis: string[];
-      location: string[];
-    };
-  };
-  transportation: {
-    type: "None" | "Flight" | "Train" | "Bus" | "Private Car";
-    preferences: {
-      class: string;
-      seatingPreference: string;
-      specialAssistance: string[];
-      luggageOptions: string[];
-    };
-  };
-  budget: {
-    maxBudget: number;
-    priorityAreas: string[];
-    flexibleAreas: string[];
-  };
-  activities: {
-    included: string[];
-    excluded: string[];
-    preferences: {
-      difficulty: string[];
-      duration: string[];
-      activityTypes: string[];
-      timeOfDay: string[];
-    };
-  };
-  meals: {
-    included: {
-      breakfast: boolean;
-      lunch: boolean;
-      dinner: boolean;
-    };
-    preferences: {
-      dietary: string[];
-      cuisine: string[];
-      mealTimes: {
-        breakfast: string;
-        lunch: string;
-        dinner: string;
-      };
-    };
-  };
-  itinerary: {
-    pace: "Relaxed" | "Moderate" | "Fast";
-    flexibility: string;
-    focusAreas: string[];
-    dayRequirements: string[];
-  };
-  accessibility: {
-    wheelchairAccess: boolean;
-    mobilityAssistance: string[];
-    dietaryRestrictions: string[];
-    medicalRequirements: string[];
-  };
-}
-
-const defaultCustomizations: CustomizationsType = {
+const defaultCustomizations: Required<CustomizationsType> = {
   accommodations: {
     hotelIds: [],
     preferences: {
@@ -118,7 +58,9 @@ const defaultCustomizations: CustomizationsType = {
   transportation: {
     type: "None",
     preferences: {
+      types: [],
       class: "",
+      specialRequirements: [],
       seatingPreference: "",
       specialAssistance: [],
       luggageOptions: [],
@@ -157,26 +99,17 @@ const defaultCustomizations: CustomizationsType = {
   },
   itinerary: {
     pace: "Moderate",
-    flexibility: "",
+    flexibility: "Flexible",
     focusAreas: [],
     dayRequirements: [],
   },
   accessibility: {
     wheelchairAccess: false,
-    mobilityAssistance: [],
+    mobilityAssistance: false,
     dietaryRestrictions: [],
     medicalRequirements: [],
   },
 };
-
-interface FormData {
-  name: string;
-  description: string;
-  basePackageId: string;
-  customizations: CustomizationsType;
-  isPublic: boolean;
-  tags: string[];
-}
 
 const defaultFormData: FormData = {
   name: "",
@@ -278,6 +211,16 @@ export default function CreatePackageTemplate() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const onUpdateActivities = (activities: ActivitiesType) => {
+    setFormData((prev) => ({
+      ...prev,
+      customizations: {
+        ...prev.customizations,
+        activities,
+      },
+    }));
   };
 
   return (
@@ -414,11 +357,10 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Room Types</ThemedText>
           <TextInput
             style={styles.input}
-            value={
-              formData.customizations.accommodations?.preferences?.roomTypes?.join(
-                ", "
-              ) || ""
-            }
+            value={(
+              formData.customizations.accommodations?.preferences?.roomTypes ||
+              []
+            ).join(", ")}
             onChangeText={(text) => {
               const roomTypes = text
                 .split(",")
@@ -446,9 +388,10 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Amenities</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.customizations.accommodations.preferences.amenities.join(
-              ", "
-            )}
+            value={(
+              formData.customizations.accommodations?.preferences?.amenities ||
+              []
+            ).join(", ")}
             onChangeText={(text) => {
               const amenities = text
                 .split(",")
@@ -461,7 +404,7 @@ export default function CreatePackageTemplate() {
                   accommodations: {
                     ...prev.customizations.accommodations,
                     preferences: {
-                      ...prev.customizations.accommodations.preferences,
+                      ...prev.customizations.accommodations?.preferences,
                       amenities,
                     },
                   },
@@ -476,9 +419,10 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Board Basis</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.customizations.accommodations.preferences.boardBasis.join(
-              ", "
-            )}
+            value={(
+              formData.customizations.accommodations?.preferences?.boardBasis ||
+              []
+            ).join(", ")}
             onChangeText={(text) => {
               const boardBasis = text
                 .split(",")
@@ -491,7 +435,7 @@ export default function CreatePackageTemplate() {
                   accommodations: {
                     ...prev.customizations.accommodations,
                     preferences: {
-                      ...prev.customizations.accommodations.preferences,
+                      ...prev.customizations.accommodations?.preferences,
                       boardBasis,
                     },
                   },
@@ -506,9 +450,10 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Location Preferences</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.customizations.accommodations.preferences.location.join(
-              ", "
-            )}
+            value={(
+              formData.customizations.accommodations?.preferences?.location ||
+              []
+            ).join(", ")}
             onChangeText={(text) => {
               const location = text
                 .split(",")
@@ -521,7 +466,7 @@ export default function CreatePackageTemplate() {
                   accommodations: {
                     ...prev.customizations.accommodations,
                     preferences: {
-                      ...prev.customizations.accommodations.preferences,
+                      ...prev.customizations.accommodations?.preferences,
                       location,
                     },
                   },
@@ -533,267 +478,25 @@ export default function CreatePackageTemplate() {
           />
         </ThemedView>
 
-        {/* Transportation Section */}
-        <ThemedView style={styles.formSection}>
-          <ThemedText style={styles.sectionTitle}>Transportation</ThemedText>
-          <ThemedText style={styles.sectionDescription}>
-            Specify transportation preferences and requirements
-          </ThemedText>
-
-          {/* Transportation Type */}
-          <ThemedText style={styles.label}>Transportation Type</ThemedText>
-          <View style={styles.buttonContainer}>
-            {["None", "Flight", "Train", "Bus", "Private Car"].map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.button,
-                  formData.customizations.transportation.type === type &&
-                    styles.buttonActive,
-                ]}
-                onPress={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    customizations: {
-                      ...prev.customizations,
-                      transportation: {
-                        ...prev.customizations.transportation,
-                        type: type as CustomizationsType["transportation"]["type"],
-                      },
-                    },
-                  }));
-                }}
-              >
-                <ThemedText
-                  style={[
-                    styles.buttonText,
-                    formData.customizations.transportation.type === type &&
-                      styles.buttonTextActive,
-                  ]}
-                >
-                  {type}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {formData.customizations.transportation.type !== "None" && (
-            <>
-              {/* Class */}
-              <ThemedText style={styles.label}>Class</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.customizations.transportation.preferences.class}
-                onChangeText={(text) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    customizations: {
-                      ...prev.customizations,
-                      transportation: {
-                        ...prev.customizations.transportation,
-                        preferences: {
-                          ...prev.customizations.transportation.preferences,
-                          class: text,
-                        },
-                      },
-                    },
-                  }));
-                }}
-                placeholder="Economy, Business, First Class"
-                placeholderTextColor={Colors.gray[400]}
-              />
-
-              {/* Seating Preference */}
-              <ThemedText style={styles.label}>Seating Preference</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={
-                  formData.customizations.transportation.preferences
-                    .seatingPreference
-                }
-                onChangeText={(text) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    customizations: {
-                      ...prev.customizations,
-                      transportation: {
-                        ...prev.customizations.transportation,
-                        preferences: {
-                          ...prev.customizations.transportation.preferences,
-                          seatingPreference: text,
-                        },
-                      },
-                    },
-                  }));
-                }}
-                placeholder="Window, Aisle, Extra Legroom"
-                placeholderTextColor={Colors.gray[400]}
-              />
-
-              {/* Special Assistance */}
-              <ThemedText style={styles.label}>Special Assistance</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.customizations.transportation.preferences.specialAssistance.join(
-                  ", "
-                )}
-                onChangeText={(text) => {
-                  const assistance = text
-                    .split(",")
-                    .map((item) => item.trim())
-                    .filter((item) => item);
-                  setFormData((prev) => ({
-                    ...prev,
-                    customizations: {
-                      ...prev.customizations,
-                      transportation: {
-                        ...prev.customizations.transportation,
-                        preferences: {
-                          ...prev.customizations.transportation.preferences,
-                          specialAssistance: assistance,
-                        },
-                      },
-                    },
-                  }));
-                }}
-                placeholder="Wheelchair, Medical assistance, etc."
-                placeholderTextColor={Colors.gray[400]}
-              />
-
-              {/* Luggage Options */}
-              <ThemedText style={styles.label}>Luggage Options</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.customizations.transportation.preferences.luggageOptions.join(
-                  ", "
-                )}
-                onChangeText={(text) => {
-                  const options = text
-                    .split(",")
-                    .map((option) => option.trim())
-                    .filter((option) => option);
-                  setFormData((prev) => ({
-                    ...prev,
-                    customizations: {
-                      ...prev.customizations,
-                      transportation: {
-                        ...prev.customizations.transportation,
-                        preferences: {
-                          ...prev.customizations.transportation.preferences,
-                          luggageOptions: options,
-                        },
-                      },
-                    },
-                  }));
-                }}
-                placeholder="Check-in baggage, Hand carry only, etc."
-                placeholderTextColor={Colors.gray[400]}
-              />
-            </>
-          )}
-        </ThemedView>
-
-        {/* Budget Section */}
-        <ThemedView style={styles.formSection}>
-          <ThemedText style={styles.sectionTitle}>Budget</ThemedText>
-          <ThemedText style={styles.sectionDescription}>
-            Specify budget preferences and priorities
-          </ThemedText>
-
-          {/* Maximum Budget */}
-          <ThemedText style={styles.label}>Maximum Budget</ThemedText>
-          <TextInput
-            style={styles.input}
-            value={formData.customizations.budget.maxBudget.toString()}
-            onChangeText={(text) => {
-              const budget = parseFloat(text) || 0;
-              setFormData((prev) => ({
-                ...prev,
-                customizations: {
-                  ...prev.customizations,
-                  budget: {
-                    ...prev.customizations.budget,
-                    maxBudget: budget,
-                  },
-                },
-              }));
-            }}
-            placeholder="Enter maximum budget"
-            placeholderTextColor={Colors.gray[400]}
-            keyboardType="numeric"
-          />
-
-          {/* Priority Areas */}
-          <ThemedText style={styles.label}>Priority Areas</ThemedText>
-          <TextInput
-            style={styles.input}
-            value={formData.customizations.budget.priorityAreas.join(", ")}
-            onChangeText={(text) => {
-              const areas = text
-                .split(",")
-                .map((area) => area.trim())
-                .filter((area) => area);
-              setFormData((prev) => ({
-                ...prev,
-                customizations: {
-                  ...prev.customizations,
-                  budget: {
-                    ...prev.customizations.budget,
-                    priorityAreas: areas,
-                  },
-                },
-              }));
-            }}
-            placeholder="Accommodation, Activities, Transportation, etc."
-            placeholderTextColor={Colors.gray[400]}
-          />
-
-          {/* Flexible Areas */}
-          <ThemedText style={styles.label}>Flexible Areas</ThemedText>
-          <TextInput
-            style={styles.input}
-            value={formData.customizations.budget.flexibleAreas.join(", ")}
-            onChangeText={(text) => {
-              const areas = text
-                .split(",")
-                .map((area) => area.trim())
-                .filter((area) => area);
-              setFormData((prev) => ({
-                ...prev,
-                customizations: {
-                  ...prev.customizations,
-                  budget: {
-                    ...prev.customizations.budget,
-                    flexibleAreas: areas,
-                  },
-                },
-              }));
-            }}
-            placeholder="Areas where budget can be flexible"
-            placeholderTextColor={Colors.gray[400]}
-          />
-        </ThemedView>
-
         <ActivitiesSection
           formData={{
-            customizations: { activities: formData.customizations.activities },
+            customizations: {
+              activities:
+                formData.customizations.activities ||
+                defaultCustomizations.activities,
+            },
           }}
-          onUpdateActivities={(activities: CustomizationsType["activities"]) =>
-            setFormData((prev) => ({
-              ...prev,
-              customizations: {
-                ...prev.customizations,
-                activities,
-              },
-            }))
-          }
+          onUpdateActivities={onUpdateActivities}
         />
 
         <MealsSection
           formData={{
-            customizations: { meals: formData.customizations.meals },
+            customizations: {
+              meals:
+                formData.customizations.meals || defaultCustomizations.meals,
+            },
           }}
-          onUpdateMeals={(meals: CustomizationsType["meals"]) =>
+          onUpdateMeals={(meals) =>
             setFormData((prev) => ({
               ...prev,
               customizations: {
@@ -806,9 +509,13 @@ export default function CreatePackageTemplate() {
 
         <ItinerarySection
           formData={{
-            customizations: { itinerary: formData.customizations.itinerary },
+            customizations: {
+              itinerary:
+                formData.customizations.itinerary ||
+                defaultCustomizations.itinerary,
+            },
           }}
-          onUpdateItinerary={(itinerary: CustomizationsType["itinerary"]) =>
+          onUpdateItinerary={(itinerary) =>
             setFormData((prev) => ({
               ...prev,
               customizations: {
@@ -819,24 +526,104 @@ export default function CreatePackageTemplate() {
           }
         />
 
-        <AccessibilitySection
-          formData={{
-            customizations: {
-              accessibility: formData.customizations.accessibility,
-            },
-          }}
-          onUpdateAccessibility={(
-            accessibility: CustomizationsType["accessibility"]
-          ) =>
-            setFormData((prev) => ({
-              ...prev,
-              customizations: {
-                ...prev.customizations,
-                accessibility,
-              },
-            }))
-          }
-        />
+        <AccessibilitySection formData={formData} setFormData={setFormData} />
+
+        {/* Transportation Section */}
+        <ThemedView style={styles.formSection}>
+          <ThemedText style={styles.sectionTitle}>Transportation</ThemedText>
+          <ThemedText style={styles.sectionDescription}>
+            Specify transportation preferences for this package template
+          </ThemedText>
+
+          {/* Transportation Types */}
+          <ThemedText style={styles.label}>Transportation Types</ThemedText>
+          <TextInput
+            style={styles.input}
+            value={(
+              formData.customizations.transportation?.preferences?.types || []
+            ).join(", ")}
+            onChangeText={(text) => {
+              const types = text
+                .split(",")
+                .map((type) => type.trim())
+                .filter((type) => type);
+              setFormData((prev) => ({
+                ...prev,
+                customizations: {
+                  ...prev.customizations,
+                  transportation: {
+                    ...prev.customizations.transportation,
+                    preferences: {
+                      ...prev.customizations.transportation?.preferences,
+                      types,
+                    },
+                  },
+                },
+              }));
+            }}
+            placeholder="Private Car, Bus, Train, etc."
+            placeholderTextColor={Colors.gray[400]}
+          />
+
+          {/* Class Preference */}
+          <ThemedText style={styles.label}>Class Preference</ThemedText>
+          <TextInput
+            style={styles.input}
+            value={
+              formData.customizations.transportation?.preferences?.class || ""
+            }
+            onChangeText={(text) => {
+              setFormData((prev) => ({
+                ...prev,
+                customizations: {
+                  ...prev.customizations,
+                  transportation: {
+                    ...prev.customizations.transportation,
+                    preferences: {
+                      ...prev.customizations.transportation?.preferences,
+                      class: text,
+                    },
+                  },
+                },
+              }));
+            }}
+            placeholder="Economy, Business, First Class"
+            placeholderTextColor={Colors.gray[400]}
+          />
+
+          {/* Special Requirements */}
+          <ThemedText style={styles.label}>Special Requirements</ThemedText>
+          <TextInput
+            style={styles.input}
+            value={(
+              formData.customizations.transportation?.preferences
+                ?.specialRequirements || []
+            ).join(", ")}
+            onChangeText={(text) => {
+              const specialRequirements = text
+                .split(",")
+                .map((req) => req.trim())
+                .filter((req) => req);
+              setFormData((prev) => ({
+                ...prev,
+                customizations: {
+                  ...prev.customizations,
+                  transportation: {
+                    ...prev.customizations.transportation,
+                    preferences: {
+                      ...prev.customizations.transportation?.preferences,
+                      specialRequirements,
+                    },
+                  },
+                },
+              }));
+            }}
+            placeholder="Wheelchair accessible, Child seat, etc."
+            placeholderTextColor={Colors.gray[400]}
+          />
+        </ThemedView>
+
+        <BudgetSection formData={formData} setFormData={setFormData} />
       </ScrollView>
     </ThemedView>
   );
@@ -872,7 +659,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: Colors.light.background,
     borderWidth: 1,
-    borderColor: Colors.gray[300],
+    borderColor: Colors.gray[200],
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -927,30 +714,5 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "500",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: Colors.light.background,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  buttonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  buttonText: {
-    fontSize: 14,
-    color: Colors.gray[600],
-  },
-  buttonTextActive: {
-    color: "#ffffff",
   },
 });
