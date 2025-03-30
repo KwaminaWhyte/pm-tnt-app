@@ -92,6 +92,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="calendar" color={color} />
           ),
+          headerShown: true,
         }}
       />
       <Tabs.Screen
@@ -99,6 +100,7 @@ export default function TabLayout() {
         options={{
           title: "Templates",
           tabBarIcon: ({ color }) => <TabBarIcon name="cube" color={color} />,
+          headerShown: true,
         }}
       />
       <Tabs.Screen

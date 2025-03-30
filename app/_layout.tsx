@@ -90,6 +90,10 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="package-template/[id]"
+                    options={{ headerShown: true }}
+                  />
+                  <Stack.Screen
                     name="login"
                     options={{ presentation: "modal", headerShown: false }}
                   />

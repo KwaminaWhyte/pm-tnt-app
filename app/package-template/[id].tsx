@@ -29,14 +29,17 @@ const ExtendedColors = {
   white: "#FFFFFF",
   yellow: {
     100: "#FFF9DB",
+    500: "#EAB308",
     800: "#975A16",
   },
   blue: {
     100: "#EBF8FF",
+    500: "#3182CE",
     800: "#2C5282",
   },
   green: {
     100: "#F0FFF4",
+    500: "#48BB78",
     600: "#38A169",
     800: "#276749",
   },
@@ -49,6 +52,7 @@ const ExtendedColors = {
   },
   purple: {
     100: "#FAF5FF",
+    500: "#805AD5",
     800: "#553C9A",
   },
 };
@@ -74,9 +78,68 @@ interface Template {
   adminFeedback?: string;
   resultingPackageId?: string;
   customizations: {
-    budget: {
-      maxBudget: number;
-      priorityAreas: string[];
+    accommodations?: {
+      hotelIds?: string[];
+      preferences?: {
+        roomTypes?: string[];
+        amenities?: string[];
+        boardBasis?: string[];
+        location?: string[];
+      };
+    };
+    transportation?: {
+      type?: "Flight" | "Train" | "Bus" | "Private Car" | "None";
+      preferences?: {
+        types?: string[];
+        class?: string;
+        specialRequirements?: string[];
+        seatingPreference?: string;
+        specialAssistance?: string[];
+        luggageOptions?: string[];
+      };
+    };
+    activities?: {
+      included?: string[];
+      excluded?: string[];
+      preferences?: {
+        difficulty?: string[];
+        duration?: string[];
+        activityTypes?: string[];
+        timeOfDay?: string[];
+      };
+    };
+    meals?: {
+      included?: {
+        breakfast?: boolean;
+        lunch?: boolean;
+        dinner?: boolean;
+      };
+      preferences?: {
+        dietary?: string[];
+        cuisine?: string[];
+        mealTimes?: {
+          breakfast?: string;
+          lunch?: string;
+          dinner?: string;
+        };
+      };
+    };
+    itinerary?: {
+      pace?: "Relaxed" | "Moderate" | "Fast";
+      flexibility?: "Fixed" | "Flexible" | "Very Flexible";
+      focusAreas?: string[];
+      dayRequirements?: string[];
+    };
+    accessibility?: {
+      wheelchairAccess?: boolean;
+      mobilityAssistance?: boolean;
+      dietaryRestrictions?: string[];
+      medicalRequirements?: string[];
+    };
+    budget?: {
+      maxBudget?: number;
+      priorityAreas?: string[];
+      flexibleAreas?: string[];
     };
   };
 }
@@ -153,21 +216,51 @@ export default function PackageTemplateScreen() {
           [fields[1]]: value,
         },
       }));
-    } else if (
-      fields.length === 3 &&
-      fields[0] === "customizations" &&
-      fields[1] === "budget"
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        customizations: {
-          ...prev.customizations,
-          budget: {
-            ...prev.customizations.budget,
-            [fields[2]]: value,
+    } else if (fields.length === 3 && fields[0] === "customizations") {
+      const section = fields[1];
+      const property = fields[2];
+
+      setFormData((prev) => {
+        const prevCustomizations = { ...prev.customizations };
+        const sectionData =
+          prevCustomizations[section as keyof typeof prevCustomizations] || {};
+
+        return {
+          ...prev,
+          customizations: {
+            ...prevCustomizations,
+            [section]: {
+              ...sectionData,
+              [property]: value,
+            },
           },
-        },
-      }));
+        };
+      });
+    } else if (fields.length === 4 && fields[0] === "customizations") {
+      const section = fields[1];
+      const subsection = fields[2];
+      const property = fields[3];
+
+      setFormData((prev) => {
+        const prevCustomizations = { ...prev.customizations };
+        const sectionData =
+          prevCustomizations[section as keyof typeof prevCustomizations] || {};
+        const subsectionData = (sectionData as any)[subsection] || {};
+
+        return {
+          ...prev,
+          customizations: {
+            ...prevCustomizations,
+            [section]: {
+              ...sectionData,
+              [subsection]: {
+                ...subsectionData,
+                [property]: value,
+              },
+            },
+          },
+        };
+      });
     }
   };
 
@@ -342,9 +435,7 @@ export default function PackageTemplateScreen() {
           <ThemedText style={styles.emptyStateText}>
             Template not found
           </ThemedText>
-          <TouchableOpacity
-            onPress={() => router.push("/package-template/list")}
-          >
+          <TouchableOpacity onPress={() => router.push("/template")}>
             <ThemedText style={styles.emptyStateAction}>
               Go to My Templates
             </ThemedText>
@@ -355,92 +446,34 @@ export default function PackageTemplateScreen() {
 
     return (
       <>
+        {/* Basic Information Section */}
         <ThemedView style={styles.headerSection}>
           {renderStatusBadge()}
-
-          {isEditing ? (
-            <>
-              <ThemedText style={styles.label}>Template Name</ThemedText>
-              <TextInput
-                style={styles.input}
-                value={formData.name}
-                onChangeText={(text) => handleInputChange("name", text)}
-                placeholder="Enter template name"
-                placeholderTextColor={Colors.gray[400]}
-              />
-
-              <ThemedText style={styles.label}>Description</ThemedText>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.description}
-                onChangeText={(text) => handleInputChange("description", text)}
-                placeholder="Describe your custom package"
-                placeholderTextColor={Colors.gray[400]}
-                multiline
-                numberOfLines={4}
-              />
-
-              <View style={styles.checkboxContainer}>
-                <TouchableOpacity
-                  style={styles.checkbox}
-                  onPress={() =>
-                    handleInputChange("isPublic", !formData.isPublic)
-                  }
-                >
-                  {formData.isPublic ? (
-                    <Ionicons
-                      name="checkbox"
-                      size={24}
-                      color={Colors.primary}
-                    />
-                  ) : (
-                    <Ionicons
-                      name="square-outline"
-                      size={24}
-                      color={Colors.gray[400]}
-                    />
-                  )}
-                </TouchableOpacity>
-                <ThemedText style={styles.checkboxLabel}>
-                  Make this template visible to other users
-                </ThemedText>
-              </View>
-            </>
+          <ThemedText style={styles.templateName}>{template.name}</ThemedText>
+          {template.description ? (
+            <ThemedText style={styles.templateDescription}>
+              {template.description}
+            </ThemedText>
           ) : (
-            <>
-              <ThemedText style={styles.templateName}>
-                {template.name}
-              </ThemedText>
-              {template.description ? (
-                <ThemedText style={styles.templateDescription}>
-                  {template.description}
-                </ThemedText>
-              ) : (
-                <ThemedText style={styles.noDescription}>
-                  No description provided
-                </ThemedText>
-              )}
-
-              <View style={styles.visibility}>
-                <Ionicons
-                  name={
-                    template.isPublic ? "globe-outline" : "lock-closed-outline"
-                  }
-                  size={16}
-                  color={
-                    template.isPublic
-                      ? ExtendedColors.green[600]
-                      : Colors.gray[600]
-                  }
-                />
-                <ThemedText style={styles.visibilityText}>
-                  {template.isPublic ? "Public template" : "Private template"}
-                </ThemedText>
-              </View>
-            </>
+            <ThemedText style={styles.noDescription}>
+              No description provided
+            </ThemedText>
           )}
+          <View style={styles.visibility}>
+            <Ionicons
+              name={template.isPublic ? "globe-outline" : "lock-closed-outline"}
+              size={16}
+              color={
+                template.isPublic ? ExtendedColors.green[600] : Colors.gray[600]
+              }
+            />
+            <ThemedText style={styles.visibilityText}>
+              {template.isPublic ? "Public template" : "Private template"}
+            </ThemedText>
+          </View>
         </ThemedView>
 
+        {/* Base Package Section */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Base Package</ThemedText>
           {template.basePackageId ? (
@@ -515,6 +548,432 @@ export default function PackageTemplateScreen() {
           </ThemedView>
         )}
 
+        {/* Accommodations Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Accommodations</ThemedText>
+          {template.customizations?.accommodations?.preferences ? (
+            <>
+              {template.customizations.accommodations.preferences.roomTypes &&
+                template.customizations.accommodations.preferences.roomTypes
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Room Types:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.accommodations.preferences.roomTypes.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.accommodations.preferences.amenities &&
+                template.customizations.accommodations.preferences.amenities
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Amenities:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.accommodations.preferences.amenities.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.accommodations.preferences.boardBasis &&
+                template.customizations.accommodations.preferences.boardBasis
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Board Basis:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.accommodations.preferences.boardBasis.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.accommodations.preferences.location &&
+                template.customizations.accommodations.preferences.location
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Location Preferences:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.accommodations.preferences.location.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No accommodation preferences specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Transportation Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Transportation</ThemedText>
+          {template.customizations?.transportation ? (
+            <>
+              <View style={styles.preferenceGroup}>
+                <ThemedText style={styles.preferenceLabel}>Type:</ThemedText>
+                <ThemedText style={styles.preferenceValue}>
+                  {template.customizations.transportation.type ||
+                    "Not specified"}
+                </ThemedText>
+              </View>
+              {template.customizations.transportation.preferences?.types &&
+                template.customizations.transportation.preferences.types
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Transportation Types:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.transportation.preferences.types.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.transportation.preferences?.class && (
+                <View style={styles.preferenceGroup}>
+                  <ThemedText style={styles.preferenceLabel}>
+                    Class Preference:
+                  </ThemedText>
+                  <ThemedText style={styles.preferenceValue}>
+                    {template.customizations.transportation.preferences.class}
+                  </ThemedText>
+                </View>
+              )}
+              {template.customizations.transportation.preferences
+                ?.specialRequirements &&
+                template.customizations.transportation.preferences
+                  .specialRequirements.length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Special Requirements:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.transportation.preferences.specialRequirements.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No transportation preferences specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Activities Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Activities</ThemedText>
+          {template.customizations?.activities ? (
+            <>
+              {template.customizations.activities.included &&
+                template.customizations.activities.included.length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Included Activities:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.activities.included.join(", ")}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.activities.excluded &&
+                template.customizations.activities.excluded.length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Excluded Activities:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.activities.excluded.join(", ")}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.activities.preferences && (
+                <>
+                  {template.customizations.activities.preferences.difficulty &&
+                    template.customizations.activities.preferences.difficulty
+                      .length > 0 && (
+                      <View style={styles.preferenceGroup}>
+                        <ThemedText style={styles.preferenceLabel}>
+                          Difficulty Levels:
+                        </ThemedText>
+                        <ThemedText style={styles.preferenceValue}>
+                          {template.customizations.activities.preferences.difficulty.join(
+                            ", "
+                          )}
+                        </ThemedText>
+                      </View>
+                    )}
+                  {template.customizations.activities.preferences
+                    .activityTypes &&
+                    template.customizations.activities.preferences.activityTypes
+                      .length > 0 && (
+                      <View style={styles.preferenceGroup}>
+                        <ThemedText style={styles.preferenceLabel}>
+                          Activity Types:
+                        </ThemedText>
+                        <ThemedText style={styles.preferenceValue}>
+                          {template.customizations.activities.preferences.activityTypes.join(
+                            ", "
+                          )}
+                        </ThemedText>
+                      </View>
+                    )}
+                </>
+              )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No activity preferences specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Meals Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Meals</ThemedText>
+          {template.customizations?.meals ? (
+            <>
+              <View style={styles.preferenceGroup}>
+                <ThemedText style={styles.preferenceLabel}>
+                  Included Meals:
+                </ThemedText>
+                <View style={styles.mealInclusionList}>
+                  <ThemedText style={styles.mealInclusion}>
+                    Breakfast:{" "}
+                    {template.customizations.meals.included?.breakfast
+                      ? "✓"
+                      : "✗"}
+                  </ThemedText>
+                  <ThemedText style={styles.mealInclusion}>
+                    Lunch:{" "}
+                    {template.customizations.meals.included?.lunch ? "✓" : "✗"}
+                  </ThemedText>
+                  <ThemedText style={styles.mealInclusion}>
+                    Dinner:{" "}
+                    {template.customizations.meals.included?.dinner ? "✓" : "✗"}
+                  </ThemedText>
+                </View>
+              </View>
+              {template.customizations.meals.preferences && (
+                <>
+                  {template.customizations.meals.preferences.dietary &&
+                    template.customizations.meals.preferences.dietary.length >
+                      0 && (
+                      <View style={styles.preferenceGroup}>
+                        <ThemedText style={styles.preferenceLabel}>
+                          Dietary Requirements:
+                        </ThemedText>
+                        <ThemedText style={styles.preferenceValue}>
+                          {template.customizations.meals.preferences.dietary.join(
+                            ", "
+                          )}
+                        </ThemedText>
+                      </View>
+                    )}
+                  {template.customizations.meals.preferences.cuisine &&
+                    template.customizations.meals.preferences.cuisine.length >
+                      0 && (
+                      <View style={styles.preferenceGroup}>
+                        <ThemedText style={styles.preferenceLabel}>
+                          Cuisine Preferences:
+                        </ThemedText>
+                        <ThemedText style={styles.preferenceValue}>
+                          {template.customizations.meals.preferences.cuisine.join(
+                            ", "
+                          )}
+                        </ThemedText>
+                      </View>
+                    )}
+                </>
+              )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No meal preferences specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Itinerary Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Itinerary</ThemedText>
+          {template.customizations?.itinerary ? (
+            <>
+              <View style={styles.preferenceGroup}>
+                <ThemedText style={styles.preferenceLabel}>Pace:</ThemedText>
+                <ThemedText style={styles.preferenceValue}>
+                  {template.customizations.itinerary.pace || "Not specified"}
+                </ThemedText>
+              </View>
+              <View style={styles.preferenceGroup}>
+                <ThemedText style={styles.preferenceLabel}>
+                  Flexibility:
+                </ThemedText>
+                <ThemedText style={styles.preferenceValue}>
+                  {template.customizations.itinerary.flexibility ||
+                    "Not specified"}
+                </ThemedText>
+              </View>
+              {template.customizations.itinerary.focusAreas &&
+                template.customizations.itinerary.focusAreas.length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Focus Areas:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.itinerary.focusAreas.join(", ")}
+                    </ThemedText>
+                  </View>
+                )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No itinerary preferences specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Accessibility Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Accessibility</ThemedText>
+          {template.customizations?.accessibility ? (
+            <>
+              <View style={styles.accessibilityOptions}>
+                <View style={styles.accessibilityOption}>
+                  <Ionicons
+                    name={
+                      template.customizations.accessibility.wheelchairAccess
+                        ? "checkmark-circle"
+                        : "close-circle"
+                    }
+                    size={20}
+                    color={
+                      template.customizations.accessibility.wheelchairAccess
+                        ? ExtendedColors.green[500]
+                        : ExtendedColors.red[500]
+                    }
+                  />
+                  <ThemedText style={styles.accessibilityText}>
+                    Wheelchair Access
+                  </ThemedText>
+                </View>
+                <View style={styles.accessibilityOption}>
+                  <Ionicons
+                    name={
+                      template.customizations.accessibility.mobilityAssistance
+                        ? "checkmark-circle"
+                        : "close-circle"
+                    }
+                    size={20}
+                    color={
+                      template.customizations.accessibility.mobilityAssistance
+                        ? ExtendedColors.green[500]
+                        : ExtendedColors.red[500]
+                    }
+                  />
+                  <ThemedText style={styles.accessibilityText}>
+                    Mobility Assistance
+                  </ThemedText>
+                </View>
+              </View>
+              {template.customizations.accessibility.dietaryRestrictions &&
+                template.customizations.accessibility.dietaryRestrictions
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Dietary Restrictions:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.accessibility.dietaryRestrictions.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.accessibility.medicalRequirements &&
+                template.customizations.accessibility.medicalRequirements
+                  .length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Medical Requirements:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.accessibility.medicalRequirements.join(
+                        ", "
+                      )}
+                    </ThemedText>
+                  </View>
+                )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No accessibility requirements specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Budget Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Budget</ThemedText>
+          {template.customizations?.budget ? (
+            <>
+              {template.customizations.budget.maxBudget !== undefined && (
+                <View style={styles.preferenceGroup}>
+                  <ThemedText style={styles.preferenceLabel}>
+                    Maximum Budget:
+                  </ThemedText>
+                  <ThemedText style={styles.budgetValue}>
+                    ${template.customizations.budget.maxBudget.toLocaleString()}
+                  </ThemedText>
+                </View>
+              )}
+              {template.customizations.budget.priorityAreas &&
+                template.customizations.budget.priorityAreas.length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Priority Areas:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.budget.priorityAreas.join(", ")}
+                    </ThemedText>
+                  </View>
+                )}
+              {template.customizations.budget.flexibleAreas &&
+                template.customizations.budget.flexibleAreas.length > 0 && (
+                  <View style={styles.preferenceGroup}>
+                    <ThemedText style={styles.preferenceLabel}>
+                      Flexible Areas:
+                    </ThemedText>
+                    <ThemedText style={styles.preferenceValue}>
+                      {template.customizations.budget.flexibleAreas.join(", ")}
+                    </ThemedText>
+                  </View>
+                )}
+            </>
+          ) : (
+            <ThemedText style={styles.noPreferences}>
+              No budget preferences specified
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* Admin Feedback Section */}
         {template.status === "Rejected" && template.adminFeedback && (
           <ThemedView style={styles.feedbackSection}>
             <ThemedText style={styles.feedbackTitle}>Admin Feedback</ThemedText>
@@ -524,6 +983,7 @@ export default function PackageTemplateScreen() {
           </ThemedView>
         )}
 
+        {/* Published Package Section */}
         {template.status === "Published" && template.resultingPackageId && (
           <ThemedView style={styles.section}>
             <ThemedText style={styles.sectionTitle}>
@@ -535,7 +995,11 @@ export default function PackageTemplateScreen() {
                 router.push(`/package-details/${template.resultingPackageId}`)
               }
             >
-              <Ionicons name="open-outline" size={24} color={Colors.primary} />
+              <Ionicons
+                name="open-outline"
+                size={24}
+                color={ExtendedColors.white}
+              />
               <ThemedText style={styles.publishedPackageText}>
                 View Published Package
               </ThemedText>
@@ -543,6 +1007,7 @@ export default function PackageTemplateScreen() {
           </ThemedView>
         )}
 
+        {/* Action Buttons */}
         {template.status === "Pending" && (
           <View style={styles.actionButtons}>
             <TouchableOpacity
@@ -621,7 +1086,9 @@ export default function PackageTemplateScreen() {
         }}
       />
 
-      <ScrollView style={styles.scrollView}>{renderContent()}</ScrollView>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {renderContent()}
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -629,6 +1096,10 @@ export default function PackageTemplateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 50,
+  },
+  contentContainer: {
+    padding: 10,
   },
   scrollView: {
     flex: 1,
@@ -638,6 +1109,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
+    minHeight: 300,
   },
   loaderText: {
     marginTop: 16,
@@ -706,11 +1178,13 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
     marginBottom: 16,
+    backgroundColor: Colors.light.background,
+    borderRadius: 12,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   packageCard: {
     backgroundColor: Colors.light.background,
@@ -798,7 +1272,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 16,
+    padding: 6,
     marginBottom: 24,
   },
   button: {
@@ -806,7 +1280,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     borderRadius: 8,
     flex: 1,
     marginHorizontal: 8,
@@ -838,7 +1312,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#E2E8F0", // Use direct color value instead of Colors.gray[300]
+    borderColor: "#E2E8F0",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -860,5 +1334,48 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 14,
+  },
+  preferenceGroup: {
+    marginBottom: 12,
+  },
+  preferenceLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.gray[600],
+    marginBottom: 4,
+  },
+  preferenceValue: {
+    fontSize: 16,
+  },
+  mealInclusionList: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  mealInclusion: {
+    fontSize: 16,
+    marginRight: 16,
+  },
+  accessibilityOptions: {
+    marginBottom: 16,
+  },
+  accessibilityOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  accessibilityText: {
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  noPreferences: {
+    fontSize: 14,
+    color: Colors.gray[400],
+    fontStyle: "italic",
+  },
+  budgetValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: ExtendedColors.green[600],
   },
 });

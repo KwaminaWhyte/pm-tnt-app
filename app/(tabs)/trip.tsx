@@ -428,79 +428,6 @@ export default function TripScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-slate-900">
-      {/* Header */}
-      <View className="px-4 py-3">
-        <ThemedText className="text-2xl font-lexend-bold">My Trips</ThemedText>
-        <ThemedText className="text-slate-500 font-lexend-light">
-          Manage your vehicle rentals and travel packages
-        </ThemedText>
-      </View>
-
-      {/* Tab Navigation */}
-      <View className="px-4 mt-2">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="flex-row"
-          contentContainerStyle={{ paddingRight: 20 }}
-        >
-          <Pressable
-            onPress={() => setActiveTab("upcoming")}
-            className={`mr-4 px-4 py-2 rounded-full ${
-              activeTab === "upcoming"
-                ? "bg-yellow-500"
-                : "bg-slate-100 dark:bg-slate-800"
-            }`}
-          >
-            <ThemedText
-              className={
-                activeTab === "upcoming"
-                  ? "text-white font-lexend-medium"
-                  : "font-lexend-light"
-              }
-            >
-              Upcoming
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => setActiveTab("past")}
-            className={`mr-4 px-4 py-2 rounded-full ${
-              activeTab === "past"
-                ? "bg-yellow-500"
-                : "bg-slate-100 dark:bg-slate-800"
-            }`}
-          >
-            <ThemedText
-              className={
-                activeTab === "past"
-                  ? "text-white font-lexend-medium"
-                  : "font-lexend-light"
-              }
-            >
-              Past
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => setActiveTab("canceled")}
-            className={`mr-4 px-4 py-2 rounded-full ${
-              activeTab === "canceled"
-                ? "bg-yellow-500"
-                : "bg-slate-100 dark:bg-slate-800"
-            }`}
-          >
-            <ThemedText
-              className={
-                activeTab === "canceled"
-                  ? "text-white font-lexend-medium"
-                  : "font-lexend-light"
-              }
-            >
-              Canceled
-            </ThemedText>
-          </Pressable>
-        </ScrollView>
-      </View>
-
       {/* Trip List */}
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -553,9 +480,81 @@ export default function TripScreen() {
         </View>
       ) : (
         <FlatList
+          ListHeaderComponent={() => (
+            <View className="pb-4">
+              <ThemedText className="text-slate-500 font-lexend-light">
+                Manage your vehicle rentals and travel packages
+              </ThemedText>
+
+              {/* Tab Navigation */}
+              <View className="mt-2">
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="flex-row"
+                  contentContainerStyle={{ paddingRight: 20 }}
+                >
+                  <Pressable
+                    onPress={() => setActiveTab("upcoming")}
+                    className={`mr-4 px-4 py-2 rounded-full ${
+                      activeTab === "upcoming"
+                        ? "bg-yellow-500"
+                        : "bg-slate-100 dark:bg-slate-800"
+                    }`}
+                  >
+                    <ThemedText
+                      className={
+                        activeTab === "upcoming"
+                          ? "text-white font-lexend-medium"
+                          : "font-lexend-light"
+                      }
+                    >
+                      Upcoming
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setActiveTab("past")}
+                    className={`mr-4 px-4 py-2 rounded-full ${
+                      activeTab === "past"
+                        ? "bg-yellow-500"
+                        : "bg-slate-100 dark:bg-slate-800"
+                    }`}
+                  >
+                    <ThemedText
+                      className={
+                        activeTab === "past"
+                          ? "text-white font-lexend-medium"
+                          : "font-lexend-light"
+                      }
+                    >
+                      Past
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setActiveTab("canceled")}
+                    className={`mr-4 px-4 py-2 rounded-full ${
+                      activeTab === "canceled"
+                        ? "bg-yellow-500"
+                        : "bg-slate-100 dark:bg-slate-800"
+                    }`}
+                  >
+                    <ThemedText
+                      className={
+                        activeTab === "canceled"
+                          ? "text-white font-lexend-medium"
+                          : "font-lexend-light"
+                      }
+                    >
+                      Canceled
+                    </ThemedText>
+                  </Pressable>
+                </ScrollView>
+              </View>
+            </View>
+          )}
           data={trips}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ paddingBottom: 16, paddingHorizontal: 16 }}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View className="h-4" />}
           refreshControl={
