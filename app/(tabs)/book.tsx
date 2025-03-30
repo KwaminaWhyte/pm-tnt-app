@@ -269,10 +269,7 @@ export default function BookingScreen() {
                     <Pressable
                       className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full relative"
                       onPress={() =>
-                        router.push({
-                          pathname: "/details",
-                          params: item,
-                        })
+                        router.push(`/hotels/${item?._id}` as Href)
                       }
                     >
                       <View className="relative">
@@ -346,9 +343,7 @@ export default function BookingScreen() {
                     <View className="relative">
                       <Pressable
                         onPress={() =>
-                          router.push(
-                            `/vehicle-details?id=${item?._id}` as Href
-                          )
+                          router.push(`/vehicles/${item?._id}` as Href)
                         }
                         className="mb-6 p-3 py-4 bg-white dark:bg-slate-950 rounded-3xl overflow-hidden w-full"
                       >
@@ -547,7 +542,7 @@ export default function BookingScreen() {
                       <Pressable
                         key={item._id}
                         onPress={() =>
-                          router.push(`/package-details?id=${item._id}` as Href)
+                          router.push(`/packages/${item._id}` as Href)
                         }
                         className="mb-6 p-2 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border-[2px] border-slate-200 dark:border-slate-700"
                       >

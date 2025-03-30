@@ -9,11 +9,17 @@ import {
   CardBroken,
   CardFilled,
   HomeBroken,
-  HomeFilled,
   SettingsBroken,
   SettingsFilled,
+  Cog,
 } from "@/components/icons/tabs";
-import { MapPin, Plane, PlaneTakeoff } from "lucide-react-native";
+import {
+  BookAudio,
+  BookIcon,
+  MapPin,
+  Plane,
+  PlaneTakeoff,
+} from "lucide-react-native";
 import { useAuth } from "@/context/AuthContext";
 import { Redirect } from "expo-router";
 import { Colors } from "@/constants/Colors";
@@ -25,15 +31,15 @@ function TabBarIcon(props: { name: string; color: string }) {
 
   switch (name) {
     case "home":
-      return <HomeFilled color={props.color} />;
+      return <HomeBroken color={props.color} />;
     case "book":
-      return <CardFilled color={props.color} />;
+      return <BookIcon color={props.color} />;
     case "calendar":
       return <MapPin color={props.color} />;
     case "cube":
       return <CardBroken color={props.color} />;
     case "person":
-      return <SettingsFilled color={props.color} />;
+      return <SettingsBroken color={props.color} />;
     default:
       return null;
   }

@@ -57,14 +57,8 @@ export default function RootLayout() {
                     name="(tabs)"
                     options={{ headerShown: false }}
                   />
-                  <Stack.Screen
-                    name="details"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="vehicle-details"
-                    options={{ headerShown: false }}
-                  />
+
+                  {/* Protected Routes */}
                   <Stack.Screen
                     name="wishlist"
                     options={{
@@ -92,6 +86,29 @@ export default function RootLayout() {
                   <Stack.Screen
                     name="package-template/[id]"
                     options={{ headerShown: true }}
+                  />
+
+                  {/* Public Routes */}
+                  <Stack.Screen
+                    name="hotels/[id]"
+                    options={{
+                      title: "Hotel Details",
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="vehicles/[id]"
+                    options={{
+                      title: "Vehicle Details",
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="packages/[id]"
+                    options={{
+                      title: "Vehicle Details",
+                      headerShown: false,
+                    }}
                   />
                   <Stack.Screen
                     name="login"

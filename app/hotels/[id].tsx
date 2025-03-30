@@ -18,7 +18,6 @@ import {
   FontAwesome6,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
-import axios from "axios";
 import { router, useGlobalSearchParams } from "expo-router";
 import { ScrollView, View } from "moti";
 import { useEffect, useState } from "react";
@@ -694,13 +693,6 @@ export default function BookDetails() {
                 color="white"
               />
             )}
-            <Text className="text-white font-semibold ml-2">
-              {favIsLoading
-                ? "Updating..."
-                : isFavorite
-                ? "Unfavorite"
-                : "Favorite"}
-            </Text>
           </Pressable>
         </View>
       </View>
