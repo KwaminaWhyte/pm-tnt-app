@@ -630,12 +630,7 @@ export default function VehicleDetails() {
               <MaterialCommunityIcons name="email" size={24} color="white" />
             </Pressable>
           </View>
-          <Pressable
-            onPress={() =>
-              router.push(`/book-vehicle?id=${vehicleData._id}` as any)
-            }
-            className="bg-yellow-500 px-6 py-3 rounded-xl"
-          >
+          <Pressable className="bg-yellow-500 px-6 py-3 rounded-xl">
             <ThemedText className="text-white font-semibold">
               Book Now
             </ThemedText>
