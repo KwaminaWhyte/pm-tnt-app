@@ -52,8 +52,8 @@ export default function BookDetails() {
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [checkInDatePickerVisible, setCheckInDatePickerVisible] =
     useState(false);
-  const [checkInDate, setCheckInDate] = useState("");
-  const [checkOutDate, setCheckOutDate] = useState("");
+  const [checkInDate, setCheckInDate] = useState<string>("");
+  const [checkOutDate, setCheckOutDate] = useState<string>("");
   const [checkOutDatePickerVisible, setCheckOutDatePickerVisible] =
     useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
@@ -62,12 +62,12 @@ export default function BookDetails() {
 
   const handleCheckIn = (date: any) => {
     setCheckInDatePickerVisible(false);
-    setCheckInDate(date);
+    setCheckInDate(date.toISOString());
   };
 
   const handleCheckOut = (date: any) => {
     setCheckOutDatePickerVisible(false);
-    setCheckOutDate(date);
+    setCheckOutDate(date.toISOString());
   };
 
   const { showBottomSheet, hideBottomSheet } = useBottomSheet();
@@ -84,6 +84,17 @@ export default function BookDetails() {
 
     if (!selectedRoomId || !checkInDate || !checkOutDate || !guests) {
       toast.show("Please fill in all required fields", { type: "warning" });
+      return;
+    }
+
+    // Validate that checkout is after checkin
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+
+    if (checkOut <= checkIn) {
+      toast.show("Check-out date must be after check-in date", {
+        type: "error",
+      });
       return;
     }
 

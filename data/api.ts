@@ -31,14 +31,57 @@ export const bookHotelRoom = async (
   numberOfGuests: number,
   token: string
 ) => {
-  const api = createApiInstance(token);
-  return api.post("/bookings/hotel", {
-    roomId,
-    hotelId,
-    startDate,
-    endDate,
-    numberOfGuests,
-  });
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    // Calculate number of nights
+    const checkInDate = new Date(startDate);
+    const checkOutDate = new Date(endDate);
+    const numberOfNights = Math.ceil(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    // Transform the request to match the expected format in BookingController
+    const transformedData = {
+      bookingType: "hotel",
+      hotelBooking: {
+        hotelId,
+        roomIds: [roomId], // Backend expects an array of room IDs
+        checkIn:
+          typeof startDate === "string" ? startDate : startDate.toISOString(),
+        checkOut: typeof endDate === "string" ? endDate : endDate.toISOString(),
+        numberOfGuests,
+        numberOfNights,
+        specialRequests: "",
+      },
+      pricing: {
+        basePrice: 0, // This will be calculated by the backend
+        taxes: 0,
+        totalPrice: 0,
+      },
+      startDate:
+        typeof startDate === "string" ? startDate : startDate.toISOString(),
+      endDate: typeof endDate === "string" ? endDate : endDate.toISOString(),
+    };
+
+    const response = await axios.post(`${BASE_URL}/bookings`, transformedData, {
+      headers,
+    });
+    console.log({ response });
+
+    return response;
+  } catch (error) {
+    console.error("Error booking hotel room:", error);
+    throw error;
+  }
 };
 
 // Favorites APIs
