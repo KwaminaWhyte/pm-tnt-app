@@ -228,7 +228,6 @@ export default function VehicleDetails() {
                 expiryDate: licenseExpiry,
               }
             : undefined,
-        bookingType: "vehicle",
       };
 
       const response = await bookVehicle(

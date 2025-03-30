@@ -304,11 +304,36 @@ export const bookVehicle = async (
       Accept: "application/json",
     };
 
-    const response = await axios.post(
-      `${BASE_URL}/vehicles/${vehicleId}/book`,
-      bookingData,
-      { headers }
-    );
+    // Transform the request to match the expected format in BookingController
+    const transformedData = {
+      bookingType: "vehicle",
+      vehicleBooking: {
+        vehicleId,
+        pickupDate: bookingData.startDate,
+        returnDate: bookingData.endDate,
+        numberOfDays: Math.ceil(
+          (new Date(bookingData.endDate).getTime() -
+            new Date(bookingData.startDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ),
+        pickupLocation: bookingData.pickupLocation,
+        dropoffLocation: bookingData.dropoffLocation,
+        driverDetails: bookingData.driverDetails,
+      },
+      pricing: {
+        basePrice: bookingData.totalPrice * 0.9,
+        taxes: bookingData.totalPrice * 0.1,
+        totalPrice: bookingData.totalPrice,
+      },
+      startDate: bookingData.startDate,
+      endDate: bookingData.endDate,
+    };
+
+    const response = await axios.post(`${BASE_URL}/bookings`, transformedData, {
+      headers,
+    });
+    console.log({ response });
+
     return response;
   } catch (error) {
     console.error("Error booking vehicle:", error);
