@@ -219,13 +219,21 @@ export default function VehicleDetails() {
         startDate: pickupDate.toISOString(),
         endDate: returnDate.toISOString(),
         totalPrice: calculateTotalPrice(),
-        pickupLocation,
-        dropoffLocation,
+        pickupLocation: {
+          ...pickupLocation,
+          address: "Not provided",
+        },
+        dropoffLocation: {
+          ...dropoffLocation,
+          address: "Not provided",
+        },
         driverDetails:
           licenseNumber && licenseExpiry
             ? {
                 licenseNumber,
                 expiryDate: licenseExpiry,
+                name: auth?.user?.name || "Not provided",
+                contactNumber: auth?.user?.phone || "Not provided",
               }
             : undefined,
       };

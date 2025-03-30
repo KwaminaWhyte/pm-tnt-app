@@ -272,6 +272,7 @@ interface VehicleBookingData {
       latitude: number;
       longitude: number;
     };
+    address?: string;
   };
   dropoffLocation: {
     city: string;
@@ -280,10 +281,13 @@ interface VehicleBookingData {
       latitude: number;
       longitude: number;
     };
+    address?: string;
   };
   driverDetails?: {
     licenseNumber: string;
     expiryDate: string;
+    name?: string;
+    contactNumber?: string;
   };
   insuranceOption?: string;
 }
@@ -316,9 +320,26 @@ export const bookVehicle = async (
             new Date(bookingData.startDate).getTime()) /
             (1000 * 60 * 60 * 24)
         ),
-        pickupLocation: bookingData.pickupLocation,
-        dropoffLocation: bookingData.dropoffLocation,
-        driverDetails: bookingData.driverDetails,
+        pickupLocation: {
+          address: bookingData.pickupLocation.address || "Not provided",
+          city: bookingData.pickupLocation.city,
+          country: bookingData.pickupLocation.country,
+          coordinates: bookingData.pickupLocation.coordinates,
+        },
+        dropoffLocation: {
+          address: bookingData.dropoffLocation.address || "Not provided",
+          city: bookingData.dropoffLocation.city,
+          country: bookingData.dropoffLocation.country,
+          coordinates: bookingData.dropoffLocation.coordinates,
+        },
+        driverDetails: bookingData.driverDetails
+          ? {
+              name: bookingData.driverDetails.name || "Not provided",
+              licenseNumber: bookingData.driverDetails.licenseNumber,
+              contactNumber:
+                bookingData.driverDetails.contactNumber || "Not provided",
+            }
+          : undefined,
       },
       pricing: {
         basePrice: bookingData.totalPrice * 0.9,
