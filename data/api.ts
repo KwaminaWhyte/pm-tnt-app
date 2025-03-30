@@ -260,6 +260,62 @@ export const getVehicleById = async (id: string, token?: string) => {
   }
 };
 
+// Book a vehicle
+interface VehicleBookingData {
+  startDate: string;
+  endDate: string;
+  totalPrice: number;
+  pickupLocation: {
+    city: string;
+    country: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  dropoffLocation: {
+    city: string;
+    country: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  driverDetails?: {
+    licenseNumber: string;
+    expiryDate: string;
+  };
+  insuranceOption?: string;
+}
+
+export const bookVehicle = async (
+  vehicleId: string,
+  bookingData: VehicleBookingData,
+  token: string
+) => {
+  try {
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    const response = await axios.post(
+      `${BASE_URL}/vehicles/${vehicleId}/book`,
+      bookingData,
+      { headers }
+    );
+    return response;
+  } catch (error) {
+    console.error("Error booking vehicle:", error);
+    throw error;
+  }
+};
+
 // Package Templates API
 export const getMyPackageTemplates = async (token?: string) => {
   console.log("token", token);

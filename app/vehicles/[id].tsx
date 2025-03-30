@@ -7,6 +7,8 @@ import {
   ImageBackground,
   Image,
   ActivityIndicator,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useColorScheme } from "react-native";
@@ -24,8 +26,11 @@ import {
   checkFavorite,
   toggleFavorite,
   getVehicleById,
+  bookVehicle,
 } from "@/data/api";
 import { ThemedText } from "@/components/ThemedText";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import moment from "moment";
 
 export default function VehicleDetails() {
   const { auth } = useAuth();
@@ -38,6 +43,24 @@ export default function VehicleDetails() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedImage, setSelectedImage] = useState("");
   const [vehicleData, setVehicleData] = useState<any>(null);
+
+  // Booking state
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
+  const [pickupDatePickerVisible, setPickupDatePickerVisible] = useState(false);
+  const [returnDatePickerVisible, setReturnDatePickerVisible] = useState(false);
+  const [pickupDate, setPickupDate] = useState<Date | null>(null);
+  const [returnDate, setReturnDate] = useState<Date | null>(null);
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [licenseExpiry, setLicenseExpiry] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [pickupLocation, setPickupLocation] = useState({
+    city: "",
+    country: "",
+  });
+  const [dropoffLocation, setDropoffLocation] = useState({
+    city: "",
+    country: "",
+  });
 
   // Fetch vehicle data using ID
   useEffect(() => {
@@ -109,6 +132,130 @@ export default function VehicleDetails() {
 
   const handleEmail = () => {
     Linking.openURL(`mailto:${vehicleData?.contactInfo?.email}`);
+  };
+
+  // Booking functions
+  const openBookingModal = () => {
+    if (!auth?.token) {
+      toast.show("Please sign in to book a vehicle", { type: "warning" });
+      router.push("/sign-in");
+      return;
+    }
+
+    // Set default pickup/dropoff locations from vehicle data if available
+    if (vehicleData?.availability?.location) {
+      const location = {
+        city: vehicleData.availability.location.city || "",
+        country: vehicleData.availability.location.country || "",
+      };
+      setPickupLocation(location);
+      setDropoffLocation(location);
+    }
+
+    setBookingModalVisible(true);
+  };
+
+  const showPickupDatePicker = () => {
+    setPickupDatePickerVisible(true);
+  };
+
+  const showReturnDatePicker = () => {
+    setReturnDatePickerVisible(true);
+  };
+
+  const hidePickupDatePicker = () => {
+    setPickupDatePickerVisible(false);
+  };
+
+  const hideReturnDatePicker = () => {
+    setReturnDatePickerVisible(false);
+  };
+
+  const handlePickupDateConfirm = (date: Date) => {
+    setPickupDate(date);
+    hidePickupDatePicker();
+  };
+
+  const handleReturnDateConfirm = (date: Date) => {
+    setReturnDate(date);
+    hideReturnDatePicker();
+  };
+
+  const calculateTotalPrice = () => {
+    if (!vehicleData || !pickupDate || !returnDate) return 0;
+
+    const pricePerDay = vehicleData.pricePerDay || 0;
+    const days = Math.ceil(
+      (returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return (days > 0 ? days : 0) * pricePerDay;
+  };
+
+  const handleBookVehicle = async () => {
+    if (!pickupDate || !returnDate) {
+      toast.show("Please select pickup and return dates", { type: "warning" });
+      return;
+    }
+
+    if (returnDate < pickupDate) {
+      toast.show("Return date must be after pickup date", { type: "error" });
+      return;
+    }
+
+    if (!pickupLocation.city || !pickupLocation.country) {
+      toast.show("Please enter pickup location", { type: "warning" });
+      return;
+    }
+
+    if (!dropoffLocation.city || !dropoffLocation.country) {
+      toast.show("Please enter dropoff location", { type: "warning" });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const bookingData = {
+        startDate: pickupDate.toISOString(),
+        endDate: returnDate.toISOString(),
+        totalPrice: calculateTotalPrice(),
+        pickupLocation,
+        dropoffLocation,
+        driverDetails:
+          licenseNumber && licenseExpiry
+            ? {
+                licenseNumber,
+                expiryDate: licenseExpiry,
+              }
+            : undefined,
+        bookingType: "vehicle",
+      };
+
+      const response = await bookVehicle(
+        vehicleData._id,
+        bookingData,
+        auth?.token || ""
+      );
+
+      if (response?.data?.success) {
+        setBookingModalVisible(false);
+        toast.show("Vehicle booked successfully!", { type: "success" });
+        router.push("/trip?category=upcoming");
+      } else {
+        // Handle API error response
+        const errorMessage =
+          response?.data?.message || "An error occurred while booking";
+        toast.show(errorMessage, { type: "error" });
+      }
+    } catch (error: any) {
+      console.error("Booking error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to book vehicle. Please try again later.";
+      toast.show(errorMessage, { type: "error" });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (isLoading) {
@@ -630,13 +777,220 @@ export default function VehicleDetails() {
               <MaterialCommunityIcons name="email" size={24} color="white" />
             </Pressable>
           </View>
-          <Pressable className="bg-yellow-500 px-6 py-3 rounded-xl">
+          <Pressable
+            className="bg-yellow-500 px-6 py-3 rounded-xl"
+            onPress={openBookingModal}
+          >
             <ThemedText className="text-white font-semibold">
               Book Now
             </ThemedText>
           </Pressable>
         </View>
       </View>
+
+      {/* Booking Modal */}
+      <Modal
+        visible={bookingModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setBookingModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white dark:bg-slate-900 rounded-t-3xl p-5">
+            <View className="flex-row justify-between items-center mb-6">
+              <ThemedText className="text-xl font-semibold">
+                Book Vehicle
+              </ThemedText>
+              <Pressable onPress={() => setBookingModalVisible(false)}>
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color="#64748b"
+                />
+              </Pressable>
+            </View>
+
+            {/* Vehicle Name */}
+            <ThemedText className="text-lg font-bold mb-4">
+              {vehicleData?.make} {vehicleData?.model} ({vehicleData?.year})
+            </ThemedText>
+
+            {/* Date Selection */}
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">Pickup Date</ThemedText>
+              <Pressable
+                onPress={showPickupDatePicker}
+                className="p-3 border border-slate-300 dark:border-slate-700 rounded-lg flex-row justify-between items-center"
+              >
+                <ThemedText>
+                  {pickupDate
+                    ? moment(pickupDate).format("MMM D, YYYY, h:mm A")
+                    : "Select pickup date and time"}
+                </ThemedText>
+                <MaterialCommunityIcons
+                  name="calendar"
+                  size={20}
+                  color="#64748b"
+                />
+              </Pressable>
+            </View>
+
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">Return Date</ThemedText>
+              <Pressable
+                onPress={showReturnDatePicker}
+                className="p-3 border border-slate-300 dark:border-slate-700 rounded-lg flex-row justify-between items-center"
+              >
+                <ThemedText>
+                  {returnDate
+                    ? moment(returnDate).format("MMM D, YYYY, h:mm A")
+                    : "Select return date and time"}
+                </ThemedText>
+                <MaterialCommunityIcons
+                  name="calendar"
+                  size={20}
+                  color="#64748b"
+                />
+              </Pressable>
+            </View>
+
+            {/* Locations */}
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">
+                Pickup Location
+              </ThemedText>
+              <View className="flex-row space-x-2">
+                <TextInput
+                  value={pickupLocation.city}
+                  onChangeText={(text) =>
+                    setPickupLocation((prev) => ({ ...prev, city: text }))
+                  }
+                  placeholder="City"
+                  placeholderTextColor="#9ca3af"
+                  className="flex-1 p-3 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+                />
+                <TextInput
+                  value={pickupLocation.country}
+                  onChangeText={(text) =>
+                    setPickupLocation((prev) => ({ ...prev, country: text }))
+                  }
+                  placeholder="Country"
+                  placeholderTextColor="#9ca3af"
+                  className="flex-1 p-3 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+                />
+              </View>
+            </View>
+
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">
+                Dropoff Location
+              </ThemedText>
+              <View className="flex-row space-x-2">
+                <TextInput
+                  value={dropoffLocation.city}
+                  onChangeText={(text) =>
+                    setDropoffLocation((prev) => ({ ...prev, city: text }))
+                  }
+                  placeholder="City"
+                  placeholderTextColor="#9ca3af"
+                  className="flex-1 p-3 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+                />
+                <TextInput
+                  value={dropoffLocation.country}
+                  onChangeText={(text) =>
+                    setDropoffLocation((prev) => ({ ...prev, country: text }))
+                  }
+                  placeholder="Country"
+                  placeholderTextColor="#9ca3af"
+                  className="flex-1 p-3 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+                />
+              </View>
+            </View>
+
+            {/* Driver Details (Optional) */}
+            <View className="mb-4">
+              <ThemedText className="mb-2 font-medium">
+                Driver Details (Optional)
+              </ThemedText>
+              <TextInput
+                value={licenseNumber}
+                onChangeText={setLicenseNumber}
+                placeholder="License Number"
+                placeholderTextColor="#9ca3af"
+                className="p-3 mb-2 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+              />
+              <TextInput
+                value={licenseExpiry}
+                onChangeText={setLicenseExpiry}
+                placeholder="License Expiry (YYYY-MM-DD)"
+                placeholderTextColor="#9ca3af"
+                className="p-3 border border-slate-300 dark:border-slate-700 text-black dark:text-white rounded-lg"
+              />
+            </View>
+
+            {/* Price Summary */}
+            <View className="mb-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+              <View className="flex-row justify-between mb-2">
+                <ThemedText>Daily Rate</ThemedText>
+                <ThemedText>${vehicleData?.pricePerDay}</ThemedText>
+              </View>
+              <View className="flex-row justify-between mb-2">
+                <ThemedText>Days</ThemedText>
+                <ThemedText>
+                  {pickupDate && returnDate
+                    ? Math.max(
+                        1,
+                        Math.ceil(
+                          (returnDate.getTime() - pickupDate.getTime()) /
+                            (1000 * 60 * 60 * 24)
+                        )
+                      )
+                    : 0}
+                </ThemedText>
+              </View>
+              <View className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <View className="flex-row justify-between">
+                  <ThemedText className="font-semibold">Total</ThemedText>
+                  <ThemedText className="font-bold text-yellow-500">
+                    ${calculateTotalPrice().toFixed(2)}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+
+            {/* Book Button */}
+            <Pressable
+              className="bg-yellow-500 py-4 rounded-lg items-center"
+              onPress={handleBookVehicle}
+              disabled={processing || !pickupDate || !returnDate}
+            >
+              {processing ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <ThemedText className="font-semibold text-white">
+                  Confirm & Pay ${calculateTotalPrice().toFixed(2)}
+                </ThemedText>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Date Time Pickers */}
+      <DateTimePickerModal
+        isVisible={pickupDatePickerVisible}
+        mode="datetime"
+        onConfirm={handlePickupDateConfirm}
+        onCancel={hidePickupDatePicker}
+        minimumDate={new Date()}
+      />
+      <DateTimePickerModal
+        isVisible={returnDatePickerVisible}
+        mode="datetime"
+        onConfirm={handleReturnDateConfirm}
+        onCancel={hideReturnDatePicker}
+        minimumDate={pickupDate || new Date()}
+      />
     </SafeAreaView>
   );
 }
