@@ -11,7 +11,11 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import { useAuth } from "@/context/AuthContext";
-import { getPackages, createPackageTemplate } from "@/data/api";
+import {
+  getPackages,
+  createPackageTemplate,
+  PackageTemplateData,
+} from "@/data/api";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
@@ -165,6 +169,24 @@ const defaultCustomizations: CustomizationsType = {
   },
 };
 
+interface FormData {
+  name: string;
+  description: string;
+  basePackageId: string;
+  customizations: CustomizationsType;
+  isPublic: boolean;
+  tags: string[];
+}
+
+const defaultFormData: FormData = {
+  name: "",
+  description: "",
+  basePackageId: "",
+  customizations: defaultCustomizations,
+  isPublic: false,
+  tags: [],
+};
+
 export default function CreatePackageTemplate() {
   const { auth } = useAuth();
   const router = useRouter();
@@ -174,70 +196,7 @@ export default function CreatePackageTemplate() {
   const [selectedPackage, setSelectedPackage] = useState<PackageType | null>(
     null
   );
-
-  const [formData, setFormData] = useState<CustomizationsType>({
-    accommodations: {
-      hotelIds: [],
-      preferences: {
-        roomTypes: [],
-        amenities: [],
-        boardBasis: [],
-        location: [],
-      },
-    },
-    transportation: {
-      type: "None",
-      preferences: {
-        class: "",
-        seatingPreference: "",
-        specialAssistance: [],
-        luggageOptions: [],
-      },
-    },
-    budget: {
-      maxBudget: 0,
-      priorityAreas: [],
-      flexibleAreas: [],
-    },
-    activities: {
-      included: [],
-      excluded: [],
-      preferences: {
-        difficulty: [],
-        duration: [],
-        activityTypes: [],
-        timeOfDay: [],
-      },
-    },
-    meals: {
-      included: {
-        breakfast: false,
-        lunch: false,
-        dinner: false,
-      },
-      preferences: {
-        dietary: [],
-        cuisine: [],
-        mealTimes: {
-          breakfast: "",
-          lunch: "",
-          dinner: "",
-        },
-      },
-    },
-    itinerary: {
-      pace: "Moderate",
-      flexibility: "",
-      focusAreas: [],
-      dayRequirements: [],
-    },
-    accessibility: {
-      wheelchairAccess: false,
-      mobilityAssistance: [],
-      dietaryRestrictions: [],
-      medicalRequirements: [],
-    },
-  });
+  const [formData, setFormData] = useState<FormData>(defaultFormData);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -269,14 +228,11 @@ export default function CreatePackageTemplate() {
     setSelectedPackage(pkg);
     setFormData((prev) => ({
       ...prev,
-      accommodations: {
-        ...prev.accommodations,
-        hotelIds: [pkg._id],
-      },
+      basePackageId: pkg._id,
     }));
   };
 
-  const handleInputChange = (field: keyof CustomizationsType, value: any) => {
+  const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -284,18 +240,26 @@ export default function CreatePackageTemplate() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.accommodations.hotelIds.length || !formData.itinerary.pace) {
+    if (!formData.name || !formData.basePackageId) {
       Toast.show({
         type: "error",
         text1: "Missing required fields",
-        text2: "Please provide a base package and select a pace",
+        text2: "Please provide a name and select a base package",
       });
       return;
     }
 
     try {
       setSubmitting(true);
-      const response = await createPackageTemplate(formData, auth?.token);
+      const templateData: PackageTemplateData = {
+        name: formData.name,
+        description: formData.description,
+        basePackageId: formData.basePackageId,
+        customizations: formData.customizations,
+        isPublic: formData.isPublic,
+        tags: formData.tags,
+      };
+      const response = await createPackageTemplate(templateData, auth?.token);
 
       Toast.show({
         type: "success",
@@ -324,20 +288,15 @@ export default function CreatePackageTemplate() {
           headerRight: () => (
             <TouchableOpacity
               onPress={handleSubmit}
-              disabled={
-                submitting ||
-                !formData.accommodations.hotelIds.length ||
-                !formData.itinerary.pace
-              }
+              disabled={submitting || !formData.name || !formData.basePackageId}
               style={[
                 styles.submitButton,
-                (!formData.accommodations.hotelIds.length ||
-                  !formData.itinerary.pace) &&
+                (!formData.name || !formData.basePackageId) &&
                   styles.disabledButton,
               ]}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color="#ffffff" />
               ) : (
                 <ThemedText style={styles.submitButtonText}>Create</ThemedText>
               )}
@@ -456,7 +415,9 @@ export default function CreatePackageTemplate() {
           <TextInput
             style={styles.input}
             value={
-              formData.accommodations?.preferences?.roomTypes?.join(", ") || ""
+              formData.customizations.accommodations?.preferences?.roomTypes?.join(
+                ", "
+              ) || ""
             }
             onChangeText={(text) => {
               const roomTypes = text
@@ -465,11 +426,14 @@ export default function CreatePackageTemplate() {
                 .filter((type) => type);
               setFormData((prev) => ({
                 ...prev,
-                accommodations: {
-                  ...prev.accommodations,
-                  preferences: {
-                    ...prev.accommodations?.preferences,
-                    roomTypes,
+                customizations: {
+                  ...prev.customizations,
+                  accommodations: {
+                    ...prev.customizations.accommodations,
+                    preferences: {
+                      ...prev.customizations.accommodations?.preferences,
+                      roomTypes,
+                    },
                   },
                 },
               }));
@@ -482,7 +446,9 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Amenities</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.accommodations.preferences.amenities.join(", ")}
+            value={formData.customizations.accommodations.preferences.amenities.join(
+              ", "
+            )}
             onChangeText={(text) => {
               const amenities = text
                 .split(",")
@@ -490,11 +456,14 @@ export default function CreatePackageTemplate() {
                 .filter((amenity) => amenity);
               setFormData((prev) => ({
                 ...prev,
-                accommodations: {
-                  ...prev.accommodations,
-                  preferences: {
-                    ...prev.accommodations.preferences,
-                    amenities,
+                customizations: {
+                  ...prev.customizations,
+                  accommodations: {
+                    ...prev.customizations.accommodations,
+                    preferences: {
+                      ...prev.customizations.accommodations.preferences,
+                      amenities,
+                    },
                   },
                 },
               }));
@@ -507,7 +476,9 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Board Basis</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.accommodations.preferences.boardBasis.join(", ")}
+            value={formData.customizations.accommodations.preferences.boardBasis.join(
+              ", "
+            )}
             onChangeText={(text) => {
               const boardBasis = text
                 .split(",")
@@ -515,11 +486,14 @@ export default function CreatePackageTemplate() {
                 .filter((basis) => basis);
               setFormData((prev) => ({
                 ...prev,
-                accommodations: {
-                  ...prev.accommodations,
-                  preferences: {
-                    ...prev.accommodations.preferences,
-                    boardBasis,
+                customizations: {
+                  ...prev.customizations,
+                  accommodations: {
+                    ...prev.customizations.accommodations,
+                    preferences: {
+                      ...prev.customizations.accommodations.preferences,
+                      boardBasis,
+                    },
                   },
                 },
               }));
@@ -532,7 +506,9 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Location Preferences</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.accommodations.preferences.location.join(", ")}
+            value={formData.customizations.accommodations.preferences.location.join(
+              ", "
+            )}
             onChangeText={(text) => {
               const location = text
                 .split(",")
@@ -540,11 +516,14 @@ export default function CreatePackageTemplate() {
                 .filter((loc) => loc);
               setFormData((prev) => ({
                 ...prev,
-                accommodations: {
-                  ...prev.accommodations,
-                  preferences: {
-                    ...prev.accommodations.preferences,
-                    location,
+                customizations: {
+                  ...prev.customizations,
+                  accommodations: {
+                    ...prev.customizations.accommodations,
+                    preferences: {
+                      ...prev.customizations.accommodations.preferences,
+                      location,
+                    },
                   },
                 },
               }));
@@ -569,14 +548,18 @@ export default function CreatePackageTemplate() {
                 key={type}
                 style={[
                   styles.button,
-                  formData.transportation.type === type && styles.buttonActive,
+                  formData.customizations.transportation.type === type &&
+                    styles.buttonActive,
                 ]}
                 onPress={() => {
                   setFormData((prev) => ({
                     ...prev,
-                    transportation: {
-                      ...prev.transportation,
-                      type: type as CustomizationsType["transportation"]["type"],
+                    customizations: {
+                      ...prev.customizations,
+                      transportation: {
+                        ...prev.customizations.transportation,
+                        type: type as CustomizationsType["transportation"]["type"],
+                      },
                     },
                   }));
                 }}
@@ -584,7 +567,7 @@ export default function CreatePackageTemplate() {
                 <ThemedText
                   style={[
                     styles.buttonText,
-                    formData.transportation.type === type &&
+                    formData.customizations.transportation.type === type &&
                       styles.buttonTextActive,
                   ]}
                 >
@@ -594,21 +577,24 @@ export default function CreatePackageTemplate() {
             ))}
           </View>
 
-          {formData.transportation.type !== "None" && (
+          {formData.customizations.transportation.type !== "None" && (
             <>
               {/* Class */}
               <ThemedText style={styles.label}>Class</ThemedText>
               <TextInput
                 style={styles.input}
-                value={formData.transportation.preferences.class}
+                value={formData.customizations.transportation.preferences.class}
                 onChangeText={(text) => {
                   setFormData((prev) => ({
                     ...prev,
-                    transportation: {
-                      ...prev.transportation,
-                      preferences: {
-                        ...prev.transportation.preferences,
-                        class: text,
+                    customizations: {
+                      ...prev.customizations,
+                      transportation: {
+                        ...prev.customizations.transportation,
+                        preferences: {
+                          ...prev.customizations.transportation.preferences,
+                          class: text,
+                        },
                       },
                     },
                   }));
@@ -621,15 +607,21 @@ export default function CreatePackageTemplate() {
               <ThemedText style={styles.label}>Seating Preference</ThemedText>
               <TextInput
                 style={styles.input}
-                value={formData.transportation.preferences.seatingPreference}
+                value={
+                  formData.customizations.transportation.preferences
+                    .seatingPreference
+                }
                 onChangeText={(text) => {
                   setFormData((prev) => ({
                     ...prev,
-                    transportation: {
-                      ...prev.transportation,
-                      preferences: {
-                        ...prev.transportation.preferences,
-                        seatingPreference: text,
+                    customizations: {
+                      ...prev.customizations,
+                      transportation: {
+                        ...prev.customizations.transportation,
+                        preferences: {
+                          ...prev.customizations.transportation.preferences,
+                          seatingPreference: text,
+                        },
                       },
                     },
                   }));
@@ -642,7 +634,7 @@ export default function CreatePackageTemplate() {
               <ThemedText style={styles.label}>Special Assistance</ThemedText>
               <TextInput
                 style={styles.input}
-                value={formData.transportation.preferences.specialAssistance.join(
+                value={formData.customizations.transportation.preferences.specialAssistance.join(
                   ", "
                 )}
                 onChangeText={(text) => {
@@ -652,11 +644,14 @@ export default function CreatePackageTemplate() {
                     .filter((item) => item);
                   setFormData((prev) => ({
                     ...prev,
-                    transportation: {
-                      ...prev.transportation,
-                      preferences: {
-                        ...prev.transportation.preferences,
-                        specialAssistance: assistance,
+                    customizations: {
+                      ...prev.customizations,
+                      transportation: {
+                        ...prev.customizations.transportation,
+                        preferences: {
+                          ...prev.customizations.transportation.preferences,
+                          specialAssistance: assistance,
+                        },
                       },
                     },
                   }));
@@ -669,7 +664,7 @@ export default function CreatePackageTemplate() {
               <ThemedText style={styles.label}>Luggage Options</ThemedText>
               <TextInput
                 style={styles.input}
-                value={formData.transportation.preferences.luggageOptions.join(
+                value={formData.customizations.transportation.preferences.luggageOptions.join(
                   ", "
                 )}
                 onChangeText={(text) => {
@@ -679,11 +674,14 @@ export default function CreatePackageTemplate() {
                     .filter((option) => option);
                   setFormData((prev) => ({
                     ...prev,
-                    transportation: {
-                      ...prev.transportation,
-                      preferences: {
-                        ...prev.transportation.preferences,
-                        luggageOptions: options,
+                    customizations: {
+                      ...prev.customizations,
+                      transportation: {
+                        ...prev.customizations.transportation,
+                        preferences: {
+                          ...prev.customizations.transportation.preferences,
+                          luggageOptions: options,
+                        },
                       },
                     },
                   }));
@@ -706,14 +704,17 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Maximum Budget</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.budget.maxBudget.toString()}
+            value={formData.customizations.budget.maxBudget.toString()}
             onChangeText={(text) => {
               const budget = parseFloat(text) || 0;
               setFormData((prev) => ({
                 ...prev,
-                budget: {
-                  ...prev.budget,
-                  maxBudget: budget,
+                customizations: {
+                  ...prev.customizations,
+                  budget: {
+                    ...prev.customizations.budget,
+                    maxBudget: budget,
+                  },
                 },
               }));
             }}
@@ -726,7 +727,7 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Priority Areas</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.budget.priorityAreas.join(", ")}
+            value={formData.customizations.budget.priorityAreas.join(", ")}
             onChangeText={(text) => {
               const areas = text
                 .split(",")
@@ -734,9 +735,12 @@ export default function CreatePackageTemplate() {
                 .filter((area) => area);
               setFormData((prev) => ({
                 ...prev,
-                budget: {
-                  ...prev.budget,
-                  priorityAreas: areas,
+                customizations: {
+                  ...prev.customizations,
+                  budget: {
+                    ...prev.customizations.budget,
+                    priorityAreas: areas,
+                  },
                 },
               }));
             }}
@@ -748,7 +752,7 @@ export default function CreatePackageTemplate() {
           <ThemedText style={styles.label}>Flexible Areas</ThemedText>
           <TextInput
             style={styles.input}
-            value={formData.budget.flexibleAreas.join(", ")}
+            value={formData.customizations.budget.flexibleAreas.join(", ")}
             onChangeText={(text) => {
               const areas = text
                 .split(",")
@@ -756,9 +760,12 @@ export default function CreatePackageTemplate() {
                 .filter((area) => area);
               setFormData((prev) => ({
                 ...prev,
-                budget: {
-                  ...prev.budget,
-                  flexibleAreas: areas,
+                customizations: {
+                  ...prev.customizations,
+                  budget: {
+                    ...prev.customizations.budget,
+                    flexibleAreas: areas,
+                  },
                 },
               }));
             }}
@@ -768,43 +775,65 @@ export default function CreatePackageTemplate() {
         </ThemedView>
 
         <ActivitiesSection
-          formData={formData}
+          formData={{
+            customizations: { activities: formData.customizations.activities },
+          }}
           onUpdateActivities={(activities: CustomizationsType["activities"]) =>
             setFormData((prev) => ({
               ...prev,
-              activities,
+              customizations: {
+                ...prev.customizations,
+                activities,
+              },
             }))
           }
         />
 
         <MealsSection
-          formData={formData}
+          formData={{
+            customizations: { meals: formData.customizations.meals },
+          }}
           onUpdateMeals={(meals: CustomizationsType["meals"]) =>
             setFormData((prev) => ({
               ...prev,
-              meals,
+              customizations: {
+                ...prev.customizations,
+                meals,
+              },
             }))
           }
         />
 
         <ItinerarySection
-          formData={formData}
+          formData={{
+            customizations: { itinerary: formData.customizations.itinerary },
+          }}
           onUpdateItinerary={(itinerary: CustomizationsType["itinerary"]) =>
             setFormData((prev) => ({
               ...prev,
-              itinerary,
+              customizations: {
+                ...prev.customizations,
+                itinerary,
+              },
             }))
           }
         />
 
         <AccessibilitySection
-          formData={formData}
+          formData={{
+            customizations: {
+              accessibility: formData.customizations.accessibility,
+            },
+          }}
           onUpdateAccessibility={(
             accessibility: CustomizationsType["accessibility"]
           ) =>
             setFormData((prev) => ({
               ...prev,
-              accessibility,
+              customizations: {
+                ...prev.customizations,
+                accessibility,
+              },
             }))
           }
         />
@@ -816,6 +845,7 @@ export default function CreatePackageTemplate() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 100,
   },
   scrollView: {
     flex: 1,
@@ -894,7 +924,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitButtonText: {
-    color: Colors.white,
+    color: "#ffffff",
     fontSize: 14,
     fontWeight: "500",
   },
@@ -907,7 +937,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: Colors.light.background,
     borderWidth: 1,
-    borderColor: Colors.gray[300],
+    borderColor: "#e2e8f0",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -921,6 +951,6 @@ const styles = StyleSheet.create({
     color: Colors.gray[600],
   },
   buttonTextActive: {
-    color: Colors.white,
+    color: "#ffffff",
   },
 });
