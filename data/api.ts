@@ -75,7 +75,6 @@ export const bookHotelRoom = async (
     const response = await axios.post(`${BASE_URL}/bookings`, transformedData, {
       headers,
     });
-    console.log({ response });
 
     return response;
   } catch (error) {
@@ -146,7 +145,6 @@ export const bookPackage = async (
       "Content-Type": "application/json",
       Accept: "application/json",
     };
-    console.log(bookingData, token);
 
     const response = await axios.post(
       `${BASE_URL}/bookings/packages`,
@@ -396,7 +394,6 @@ export const bookVehicle = async (
     const response = await axios.post(`${BASE_URL}/bookings`, transformedData, {
       headers,
     });
-    console.log({ response });
 
     return response;
   } catch (error) {
@@ -407,13 +404,10 @@ export const bookVehicle = async (
 
 // Package Templates API
 export const getMyPackageTemplates = async (token?: string) => {
-  console.log("token", token);
-
   try {
     const response = await axios.get(`${BASE_URL}/packages/templates/my`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    console.log(response.data.data);
 
     return response.data.data;
   } catch (error) {

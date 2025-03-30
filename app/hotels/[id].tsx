@@ -18,7 +18,7 @@ import {
   FontAwesome6,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
-import { router, useGlobalSearchParams } from "expo-router";
+import { Redirect, router, useGlobalSearchParams } from "expo-router";
 import { ScrollView, View } from "moti";
 import { useEffect, useState } from "react";
 import {
@@ -108,11 +108,23 @@ export default function BookDetails() {
         parseInt(guests),
         auth?.token as string
       );
+      console.log(response.data);
 
       // Store booking data and show payment form
       setBookingData(response.data);
-      setShowPaymentForm(true);
       hideBottomSheet();
+
+      if (response?.data?.success) {
+        toast.show("Room booked successfully!", { type: "success" });
+        router.replace("/bookings");
+      } else {
+        // Handle API error response
+        const errorMessage =
+          response?.data?.message || "An error occurred while booking";
+        toast.show(errorMessage, { type: "error" });
+      }
+
+      // setShowPaymentForm(true);
     } catch (error: any) {
       console.error("Booking error:", error?.response?.data || error);
       toast.show(
@@ -644,7 +656,7 @@ export default function BookDetails() {
       </View>
 
       {/* Payment Form Bottom Sheet */}
-      {bookingData && (
+      {/* {bookingData && (
         <View className="absolute inset-0 z-50">
           <CustomBottomSheet
             isOpen={showPaymentForm}
@@ -666,7 +678,7 @@ export default function BookDetails() {
             />
           </CustomBottomSheet>
         </View>
-      )}
+      )} */}
 
       {/* Bottom Actions */}
       <View className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-white dark:bg-slate-800 z-40">
